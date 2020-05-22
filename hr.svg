@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:export-ydpi="440.01001"
+   inkscape:export-xdpi="440.01001"
+   inkscape:export-filename="C:\Users\offic\OneDrive\baumrock.com\logo2020\baum.png"
+   width="62.880501mm"
+   height="11.937499mm"
+   viewBox="0 0 62.880503 11.937499"
+   version="1.1"
+   id="svg8"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   sodipodi:docname="hr.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     lock-margins="true"
+     fit-margin-bottom="2"
+     fit-margin-right="2"
+     fit-margin-left="2"
+     fit-margin-top="2"
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="3.959798"
+     inkscape:cx="141.17992"
+     inkscape:cy="12.297371"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     inkscape:document-rotation="0"
+     showgrid="false"
+     inkscape:window-width="1280"
+     inkscape:window-height="658"
+     inkscape:window-x="-6"
+     inkscape:window-y="-6"
+     inkscape:window-maximized="1"
+     inkscape:pagecheckerboard="true"
+     inkscape:snap-grids="true"
+     inkscape:snap-to-guides="true" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     transform="translate(37.558598,-88.129273)"
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     style="display:inline">
+    <path
+       inkscape:export-ydpi="440"
+       inkscape:export-xdpi="440"
+       id="path863"
+       style="fill:#1c9e68;fill-opacity:1;stroke:none;stroke-width:0.0706743px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m -5.5807649,90.129291 c -0.7868594,-0.0032 -1.6164893,0.417511 -2.203606,1.449101 -2.1166842,1.597763 -0.7559595,4.143343 0.9556229,4.29913 l -0.3104428,1.219134 c -1.0237358,0.0392 -2.9299212,0.472726 -2.9872362,0.6986 2.987276,-0.698607 5.9898033,-0.02755 7.467331,0.271516 -0.9719265,-0.456327 -2.0791704,-0.801105 -3.4546257,-0.925117 l 0.2176827,-0.773001 c 2.0625401,0.424113 3.7753584,-1.37335 2.5734044,-3.557877 0.2460216,-1.493558 -0.9466978,-2.676164 -2.2581303,-2.681486 z m 0.3500592,1.504315 0.6498733,4.223901 -1.2228606,-0.905516 -0.5437236,2.177379 -0.5340611,-0.01988 0.5739535,-2.174619 -1.5397911,0.232039 z" />
+    <rect
+       style="fill:#1c9e68;fill-opacity:1;stroke:none;stroke-width:0.0370298"
+       id="rect832"
+       width="23.023899"
+       height="0.52916664"
+       x="0.29800227"
+       y="93.833443" />
+    <rect
+       y="93.833443"
+       x="-35.558598"
+       height="0.52916664"
+       width="23.023901"
+       id="rect832-9"
+       style="display:inline;fill:#1c9e68;fill-opacity:1;stroke:none;stroke-width:0.0370298" />
+  </g>
+  <g
+     transform="translate(97.210251,2.0000656)"
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="Layer 3"
+     style="display:inline" />
+</svg>
