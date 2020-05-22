@@ -6,10 +6,17 @@
  * @license Licensed under MIT
  * @link https://www.baumrock.com
  */
+require("Column.php");
 class RockFinder3Master extends WireData implements Module {
 
   /** @var WireArray */
   public $finders;
+
+  /** @var array */
+  public $baseColumns;
+  
+  /** @var WireArray */
+  public $columnTypes;
 
   public static function getModuleInfo() {
     return [
@@ -29,6 +36,56 @@ class RockFinder3Master extends WireData implements Module {
   public function init() {
     $this->wire('RockFinder3', $this);
     $this->finders = $this->wire(new WireArray());
+    $this->columnTypes = $this->wire(new WireArray());
+    $this->getBaseColumns();
+    $this->loadColumnTypes(__DIR__."/columnTypes");
+  }
+
+  /**
+   * Load all column type definitions in given directory
+   * @return void
+   */
+  public function loadColumnTypes($dir) {
+    $dir = Paths::normalizeSeparators($dir);
+    foreach($this->files->find($dir, ['extensions'=>['php']]) as $file) {
+      $file = $this->info($file);
+      // try to load the columnType class
+      try {
+        require_once($file->path);
+        $class = "\RockFinder3Column\\{$file->filename}";
+        $colType = new $class();
+        $colType->type = $file->filename;
+        $this->columnTypes->add($colType);
+      } catch (\Throwable $th) {
+        //throw $th;
+      }
+    }
+  }
+
+  /**
+   * Get info for given file
+   * @return WireData
+   */
+  public function info($file) {
+    $info = $this->wire(new WireData()); /** @var WireData $info */
+    $info->setArray(pathinfo($file));
+    $info->path = $file;
+    return $info;
+  }
+
+  /**
+   * Get the columns that are part of the 'pages' db table
+   * Those columns need to be treaded differently in queries.
+   */
+  public function getBaseColumns() {
+    // get base table columns
+    // this is only attached to the base instance for better performance
+    $db = $this->config->dbName;
+    $result = $this->database->query("SELECT `COLUMN_NAME`
+      FROM `INFORMATION_SCHEMA`.`COLUMNS`
+      WHERE `TABLE_SCHEMA`='$db'
+      AND `TABLE_NAME`='pages';");
+    $this->baseColumns = $result->fetchAll(\PDO::FETCH_COLUMN);
   }
 
   /**
@@ -55,6 +112,7 @@ class RockFinder3Master extends WireData implements Module {
   public function __debugInfo() {
     return [
       'finders' => $this->finders,
+      'baseColumns' => $this->baseColumns,
     ];
   }
 }

@@ -7,6 +7,9 @@
  * @link https://www.baumrock.com
  */
 class ProcessRockFinder3 extends Process {
+  
+  const pageName = 'rockfinder3';
+
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3 Tester',
@@ -21,7 +24,7 @@ class ProcessRockFinder3 extends Process {
       
       // page that you want created to execute this module
       'page' => [
-        'name' => 'rockfinder3',
+        'name' => self::pageName,
         'parent' => 'setup',
         'title' => 'RockFinder3'
       ],

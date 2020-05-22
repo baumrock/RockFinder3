@@ -56,12 +56,46 @@ Install the RockFinder3Master module. The master module is an autoload module th
 In the most basic setup the only thing you need to provide to a RockFinder is a regular PW selector via the `find()` method:
 
 ```php
-d($RockFinder3->find("template=admin, limit=3"));
+db($RockFinder3->find("template=admin, limit=3"));
 ```
 
+## Adding columns
 
+You'll most likely don't need only ids, so there is the `addColumns()` method for adding additional columns:
 
+```php
+$finder = $RockFinder3
+  ->find("template=admin, limit=3")
+  ->addColumns(['title', 'created']);
+db($finder);
+```
 
+![img](https://i.imgur.com/k0gHwXW.png)
+
+This makes it possible to easily add any field data of the requested page.
+
+## Dumping data
+
+For small finders Tracy's `dump()` feature is enough, but if you have more complex finders or you have thousands of pages this might get really inconvenient. That's why RockFinder3 ships with a custom `dump()` method that works in the tracy console and turns the result of the finder into a paginated table (using tabulator.info):
+
+```php
+$finder = $RockFinder3
+  ->find("id>0")
+  ->addColumns(['title', 'created']);
+$finder->dump();
+```
+
+![img](https://i.imgur.com/dfHdrG7.png)
+
+### Custom column types
+
+You can add custom column types easily. Just place them in a folder and tell RockFinder to scan this directory for columnTypes:
+
+```php
+$modules->get('RockFinder3Master')->loadColumnTypes('/your/directory/');
+```
+
+See the existing columnTypes as learning examples.
 
 
 
@@ -74,12 +108,29 @@ d($RockFinder3->find("template=admin, limit=3"));
 
 ![img](hr.svg)
 
-# Improvements to RockFinder2
+# Differences to RockFinder 1 and 2
+
+RockFinder2 has an API to be queried via www.example.com/your-secred-rockfinder-url
+
+This should really not be part of the rockfinder module! If there is a need for such a feature we can put it in a separate module or use RockFinder2 instead.
 
 ## RockFinder3 supports chaining
 
 ```php
 db($RockFinder3->find("template=foo")->addColumns(['foo', 'bar'])->getData());
+```
+
+## RockFinder3 has a columns property
+
+All columns added to the finder are available as `$finder->columns`.
+
+![img](https://i.imgur.com/9DUqXbG.png)
+
+This is a WireArray so you can easily get your desired column via PW magic:
+
+```php
+$finder->columns->find("type=BaseColumn");
+$finder->columns->get("myFooColumn"); // using the name property
 ```
 
 

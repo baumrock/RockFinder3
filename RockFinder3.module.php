@@ -15,6 +15,12 @@ class RockFinder3 extends WireData implements Module {
 
   /** @var RockFinder3Master */
   public $master;
+  
+  /**
+   * Columns that are added to this finder
+   * @var WireArray
+   */
+  public $columns;
 
   private $selector;
 
@@ -42,10 +48,52 @@ class RockFinder3 extends WireData implements Module {
   public function __construct() {
     $this->name = uniqid();
     $this->master = $this->modules->get('RockFinder3Master');
+    $this->columns = $this->wire(new WireArray);
   }
 
   /** ########## CHAINABLE PUBLIC API METHODS ########## */
   
+  /**
+   * Add columns to finder
+   * @param array $columns
+   */
+  public function addColumns($columns) {
+    if(!$this->query) throw new WireException("Setup the selector before calling addColumns()");
+    if(!is_array($columns)) throw new WireException("Parameter must be an array");
+
+    // add columns one by one
+    foreach($columns as $k=>$v) {
+      // skip null value columns
+      if($v === null) continue;
+
+      // if key is integer we take the value instead
+      if(is_int($k)) {
+        $k = $v;
+        $v = null;
+      }
+
+      // setup initial column name
+      $column = $k;
+
+      // if a type is set, get type
+      // syntax is type:column, eg addColumns(['mytype:myColumn'])
+      $type = null;
+      if(strpos($column, ":")) {
+        $arr = explode(":", $column);
+        $type = $arr[0];
+        $column = $arr[1];
+      }
+
+      // column name alias
+      $alias = $v;
+
+      // add this column
+      $this->addColumn($column, $type, $alias);
+    }
+
+    return $this;
+  }
+
   /**
    * Set selector of this finder
    * @param string|array|DatabaseQuerySelect $selector
@@ -79,6 +127,7 @@ class RockFinder3 extends WireData implements Module {
 
   /**
    * Save this finder to the global array of finders
+   * The finder can then be joined by other finders etc.
    */
   public function save($name = null) {
     if($name) $this->setName($name);
@@ -151,10 +200,134 @@ class RockFinder3 extends WireData implements Module {
   
   /** ########## END GET DATA ########## */
 
+  /**
+   * Add column to finder
+   * @param mixed $column
+   * @param mixed $type
+   * @param mixed $alias
+   * @return void
+   */
+  private function addColumn($column, $type = null, $alias = null) {
+    if(!$type) $type = $this->getType($column);
+    if(!$alias) $alias = $column;
+    $query = $this->query;
+
+    // add this column to columns array
+    $colname = (string)$column;
+    if($this->columns->has($colname)) {
+      // if the column does already exist we append a unique id
+      // this can happen when requesting title and value of an options field
+      // https://i.imgur.com/woxCx78.png
+      $colname .= "_".uniqid();
+    }
+
+    // get the column object and apply its changes to the current finder
+    $col = $this->master->columnTypes
+      ->get("type=$type")
+      ->getNew($colname, $alias)
+      ->applyTo($this);
+
+    // add column to array of columns
+    $this->columns->add($col);
+  }
+
+  /**
+   * Dump this finder to the tracy console
+   * @return void
+   */
+  public function dump($title = null, $options = null) {
+    $settings = $this->wire(new WireData()); /** @var WireData $settings */
+    $settings->setArray([
+      'layout' => 'fitColumns',
+      'autoColumns' => true,
+      'pagination' => "local",
+      'paginationSize' => 10,
+      'paginationSizeSelector' => true,
+    ]);
+    $settings->setArray($options ?: []);
+    $settings = $settings->getArray();
+    $settings['data'] = $this->getData()->data;
+    $json = json_encode($settings);
+
+    $id = uniqid();
+    $url = $this->pages->get([
+      "has_parent" => 2,
+      "name" => ProcessRockFinder3::pageName,
+    ])->url;
+    $link = "<a href='$url'>$url</a>";
+    $msg = "Tabulator assets are not loaded, please try again here: $link";
+
+    if($title) echo "<h2>$title</h2>";
+    echo "<div id='tab_$id'>loading...</div>
+    <script>
+    if(typeof Tabulator == 'undefined') $('#tab_$id').html(\"$msg\");
+    else new Tabulator('#tab_$id', $json);
+    </script>";
+  }
+
+  /**
+   * Get the type of this column
+   * 
+   * The type is then used for getting the proper data for the column.
+   * 
+   * @param string $column
+   * @return string
+   */
+  public function ___getType($column) {
+    // is this column part of the pages table?
+    if($this->isBaseColumn($column)) return 'BaseColumn';
+
+    // is it a pw field?
+    $field = $this->fields->get($column);
+    if($field) {
+      // file and image fields
+      if($field->type instanceof FieldtypeFile) return 'FieldMulti';
+      if($field->type instanceof FieldtypePage) return 'FieldMulti';
+      if($field->type instanceof FieldtypeOptions) return 'FieldMulti';
+
+      // by default we take it as text field
+      return 'FieldText';
+    }
+    else return 'FieldNotFound';
+  }
+  
+  /**
+   * Return current sql query string
+   * @return string
+   */
+  public function getSQL($pretty = true) {
+    if(!$this->query) return;
+    $sql = $this->query->getQuery();
+    return $pretty ? $this->prettify($sql) : $sql;
+  }
+
+  /**
+   * Is this column part of the 'pages' db table?
+   * @return bool
+   */
+  private function isBaseColumn($column) {
+    return in_array($column, $this->master->baseColumns);
+  }
+  
+  /**
+   * Prettify SQL string
+   * @return string
+   */
+  private function prettify($sql) {
+    $str = str_replace("SELECT ", "SELECT\n  ", $sql);
+    $str = str_replace("`,", "`,\n  ", $str);
+
+    // undo double breaks on joined sql
+    $str = str_replace("`,\n  \n", "`,\n", $str);
+
+    return $str;
+  }
+
   public function __debugInfo() {
     return [
       'name' => $this->name,
       'selector' => $this->selector,
+      'columns' => $this->columns,
       'getData()' => $this->getData(),
     ];
   }
