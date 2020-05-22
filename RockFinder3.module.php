@@ -222,8 +222,10 @@ class RockFinder3 extends WireData implements Module {
     }
 
     // get the column object and apply its changes to the current finder
-    $col = $this->master->columnTypes
-      ->get("type=$type")
+    $colType = $this->master->columnTypes->get("type=$type");
+    if(!$colType) throw new WireException("No column type class for $type");
+    
+    $col = $colType
       ->getNew($colname, $alias)
       ->applyTo($this);
 
@@ -281,14 +283,14 @@ class RockFinder3 extends WireData implements Module {
     $field = $this->fields->get($column);
     if($field) {
       // file and image fields
-      if($field->type instanceof FieldtypeFile) return 'FieldMulti';
-      if($field->type instanceof FieldtypePage) return 'FieldMulti';
-      if($field->type instanceof FieldtypeOptions) return 'FieldMulti';
+      if($field->type instanceof FieldtypeFile) return 'Multi';
+      if($field->type instanceof FieldtypePage) return 'Multi';
+      if($field->type instanceof FieldtypeOptions) return 'Multi';
 
       // by default we take it as text field
-      return 'FieldText';
+      return 'Text';
     }
-    else return 'FieldNotFound';
+    else return 'NotFound';
   }
   
   /**
