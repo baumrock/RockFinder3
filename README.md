@@ -263,6 +263,6 @@ $finder->find("template=admin, limit=3", ['nosort'=>true]);
 
 # Thank you
 
-...for reading the docs and using RockFinder3. If you find RockFinder3 helpful consider giving it a star on github or [buying me a drink](https://www.paypal.me/baumrock). I'm also always happy to get feedback in the PW forum!
+...for reading the docs and using RockFinder3. If you find RockFinder3 helpful consider giving it a star on github or [saying thank you](https://www.paypal.me/baumrock). I'm also always happy to get feedback in the PW forum!
 
 Happy finding!
