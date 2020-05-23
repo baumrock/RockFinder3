@@ -1,4 +1,4 @@
-# RockFinder3
+![img](logo.svg)
 
 Combine the power of ProcessWire selectors and SQL
 
