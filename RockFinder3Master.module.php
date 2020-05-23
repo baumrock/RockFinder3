@@ -7,7 +7,7 @@
  * @link https://www.baumrock.com
  */
 require("Column.php");
-class RockFinder3Master extends WireData implements Module {
+class RockFinder3Master extends WireData implements Module, ConfigurableModule {
 
   /** @var WireArray */
   public $finders;
@@ -99,6 +99,43 @@ class RockFinder3Master extends WireData implements Module {
     /** @var RockFinder3 */
     $finder = $this->modules->get('RockFinder3');
     return $finder->find($selector);
+  }
+
+  /**
+  * Config inputfields
+  * @param InputfieldWrapper $inputfields
+  */
+  public function getModuleConfigInputfields($inputfields) {
+    if($this->input->post->installProcessModule) {
+      $this->modules->install('ProcessRockFinder3');
+    }
+
+    if(!$this->modules->isInstalled('ProcessRockFinder3')) {
+      /** @var InputfieldSubmit $b */
+      $b = $this->wire('modules')->get('InputfieldSubmit');
+      $b->name = 'installProcessModule';
+      $b->value = 'Install the RockFinder3 ProcessModule';
+      $b->icon = 'bolt';
+
+      $inputfields->add([
+        'type' => 'markup',
+        'icon' => 'question-circle-o',
+        'label' => 'Do you want to install the ProcessModule?',
+        'description' => "The ProcessModule is optional but lightweight. It helps you creating and debugging Finders via the tracy console. To install it, click the button below:",
+        'value' => $b->render(),
+      ]);
+    }
+    else {
+      $url = $this->pages->get("has_parent=2, name=".ProcessRockFinder3::pageName)->url;
+      $link = "<a href='$url'>Click here to open it and write your first finder!</a>";
+      $inputfields->add([
+        'type' => 'markup',
+        'icon' => 'check',
+        'label' => 'RockFinder3 Process Module',
+        'value' => "The process module is installed - $link",
+      ]);
+    }
+    return $inputfields;
   }
 
   /**
