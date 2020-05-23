@@ -57,7 +57,7 @@ class RockFinder3Master extends WireData implements Module {
         $colType->type = $file->filename;
         $this->columnTypes->add($colType);
       } catch (\Throwable $th) {
-        //throw $th;
+        $this->error($th->getMessage());
       }
     }
   }
@@ -76,16 +76,15 @@ class RockFinder3Master extends WireData implements Module {
   /**
    * Get the columns that are part of the 'pages' db table
    * Those columns need to be treaded differently in queries.
+   * @return array
    */
   public function getBaseColumns() {
-    // get base table columns
-    // this is only attached to the base instance for better performance
     $db = $this->config->dbName;
     $result = $this->database->query("SELECT `COLUMN_NAME`
       FROM `INFORMATION_SCHEMA`.`COLUMNS`
       WHERE `TABLE_SCHEMA`='$db'
       AND `TABLE_NAME`='pages';");
-    $this->baseColumns = $result->fetchAll(\PDO::FETCH_COLUMN);
+    return $this->baseColumns = $result->fetchAll(\PDO::FETCH_COLUMN);
   }
 
   /**
