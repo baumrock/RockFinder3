@@ -4,7 +4,7 @@
  */
 class Text extends \RockFinder3\Column {
   public function applyTo($finder) {
-    $finder->query->leftjoin("`{$this->table}` AS `{$this->tableAlias}` ON {$this->tableAlias}.pages_id=pages.id");
-    $finder->query->select("`{$this->tableAlias}`.data AS `{$this->alias}`");
+    $finder->query->leftjoin("`{$this->table}` AS `{$this->tableAlias}` ON `{$this->tableAlias}`.`pages_id` = `pages`.`id`");
+    $finder->query->select("{$this->select} AS `{$this->alias}`");
   }
 }

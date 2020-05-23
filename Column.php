@@ -5,6 +5,7 @@ abstract class Column extends \ProcessWire\Wire {
   public $type;
   public $table;
   public $tableAlias;
+  public $select;
 
   public function __construct() {
     // set classname as "type" property so we can query the master array:
@@ -49,7 +50,32 @@ abstract class Column extends \ProcessWire\Wire {
     $col->alias = $alias;
     $col->setTable();
     $col->setTableAlias();
+    $col->setSelect();
     return $col;
+  }
+
+  /**
+   * Set the data-column that should be selected via SQL
+   * 
+   * This is usually `table`.`data` but for multilang it is `table`.`data123`
+   * If the multilang column is empty it should return the default's lang value
+   * so it gets even more complicated. This method handles all that and can
+   * simply be used in columTypes via $query->select("{$this->select} AS `{$this->alias}`);
+   * @return void
+   */
+  public function setSelect() {
+    $lang = $this->user->language;
+    $type = $this->fields->get($this->name)->type;
+    $this->select = "`{$this->tableAlias}`.`data`";
+
+    // early exit if user has default language
+    if($lang->isDefault) return;
+
+    // early exit if field is single-language
+    if(!$type instanceof \ProcessWire\FieldtypeLanguageInterface) return;
+
+    // multi-lang field
+    $this->select = "COALESCE(NULLIF(`{$this->tableAlias}`.`data{$lang->id}`, ''), `{$this->tableAlias}`.`data`)";
   }
 
   public function __debugInfo() {
@@ -59,6 +85,7 @@ abstract class Column extends \ProcessWire\Wire {
       'type' => $this->type,
       'table' => $this->table,
       'tableAlias' => $this->tableAlias,
+      'select' => $this->select,
     ];
   }
 }

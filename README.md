@@ -10,6 +10,12 @@ The basic concept of RockFinder is to make it easy to get large numbers of data 
 
 RockFinder is here to help you in such situations and makes finding (or aggregating) data stored in your ProcessWire installation easy, efficient and hopefully fun.
 
+### Differences to previous RockFinder modules
+
+* RF3 supports chaining: `$RockFinder3->find("template=foo")->addColumns(['foo'])`.
+* RF3 fully supports multi-language.
+* RF3 makes it super-easy to add custom columnTypes.
+
 ### Getting help / Contribute
 
 * If you need help please head over to the PW forum thread and ask your question there: // TODO
@@ -175,6 +181,35 @@ $finder->getOption('sex', 2);
 
 # Multi-Language
 
+Usually data of a field is stored in the `data` db column of the field. On a multi-language setup though, the data is stored in the column for the user's current language, eg `data123`. This makes the queries more complex, because you need to fallback to the default language if the current language's column has no value. RockFinder3 does all that for you behind the scenes and does just return the column value in the users language:
+
+```php
+$this->user->language = $languages->get(1245);
+$finder = $RockFinder3
+  ->find("template=cat")
+  ->addColumns([
+    'title',
+    'sex',
+  ]);
+```
+
+![img](https://i.imgur.com/1R6ukB8.png)
+
+Even setting up new columnTypes is easy! Just use the built in `select` proerty of the column and it will return the correct SQL query for you:
+
+```php
+class Text extends \RockFinder3\Column {
+  public function applyTo($finder) {
+    $finder->query->leftjoin("`{$this->table}` AS `{$this->tableAlias}` ON `{$this->tableAlias}`.`pages_id` = `pages`.`id`");
+    $finder->query->select("{$this->select} AS `{$this->alias}`");
+  }
+}
+```
+
+This will use these values behind the scenes (here for the `title` field):
+
+![img](https://i.imgur.com/gQA22HA.png)
+
 
 ![img](hr.svg)
 
@@ -203,19 +238,6 @@ This should really not be part of the rockfinder module! If there is a need for 
 
 ```php
 db($RockFinder3->find("template=foo")->addColumns(['foo', 'bar'])->getData());
-```
-
-## RockFinder3 has a columns property
-
-All columns added to the finder are available as `$finder->columns`.
-
-![img](https://i.imgur.com/9DUqXbG.png)
-
-This is a WireArray so you can easily get your desired column via PW magic:
-
-```php
-$finder->columns->find("type=BaseColumn");
-$finder->columns->get("myFooColumn"); // using the name property
 ```
 
 
