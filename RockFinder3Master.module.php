@@ -7,6 +7,7 @@
  * @link https://www.baumrock.com
  */
 require("Column.php");
+require("FinderData.php");
 class RockFinder3Master extends WireData implements Module, ConfigurableModule {
 
   /** @var WireArray */

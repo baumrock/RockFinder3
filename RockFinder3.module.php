@@ -21,6 +21,12 @@ class RockFinder3 extends WireData implements Module {
    * @var WireArray
    */
   public $columns;
+  
+  /**
+   * Options that are added to this finder
+   * @var WireData
+   */
+  public $options;
 
   private $selector;
 
@@ -49,6 +55,7 @@ class RockFinder3 extends WireData implements Module {
     $this->name = uniqid();
     $this->master = $this->modules->get('RockFinder3Master');
     $this->columns = $this->wire(new WireArray);
+    $this->options = $this->wire(new WireData);
   }
 
   /** ########## CHAINABLE PUBLIC API METHODS ########## */
@@ -91,6 +98,32 @@ class RockFinder3 extends WireData implements Module {
       $this->addColumn($column, $type, $alias);
     }
 
+    return $this;
+  }
+  
+  /**
+   * Add options from field
+   * @param array|string $field
+   * @return void
+   */
+  public function addOptions($field) {
+    if(is_array($field)) {
+      foreach($field as $f) $this->addOptions($f);
+      return $this;
+    }
+    
+    $fieldname = (string)$field;
+    $field = $this->fields->get($fieldname);
+    if(!$field) throw new WireException("Field $fieldname not found");
+    
+    $data = [];
+    foreach($field->type->getOptions($field) as $option) {
+      $opt = $this->wire(new WireData()); /** @var WireData $opt */
+      $opt->value = $option->value;
+      $opt->title = $option->title;
+      $data[$option->id] = $opt;
+    }
+    $this->options->$fieldname = $data;
     return $this;
   }
 
@@ -158,7 +191,7 @@ class RockFinder3 extends WireData implements Module {
     $mainData = $this->getMainData();
     $this->loadRelationsData($mainData);
     
-    $data = (object)[];
+    $data = new \RockFinder3\FinderData();
     $data->name = $this->name;
     $data->data = $mainData;
     $data->options = $this->options;
@@ -187,6 +220,22 @@ class RockFinder3 extends WireData implements Module {
     $result = $this->query->execute();
     if($columnindex === null) return $result->fetchAll(\PDO::FETCH_OBJ);
     else return $result->fetchAll(\PDO::FETCH_COLUMN, $columnindex);
+  }
+
+  /**
+   * Return options by name
+   * @return array
+   */
+  public function getOptions($name) {
+    return $this->getData()->options->{$name};
+  }
+
+  /**
+   * Return option object by name and index
+   * @return WireData
+   */
+  public function getOption($name, $index) {
+    return $this->getOptions($name)[$index];
   }
   
   /**

@@ -87,7 +87,15 @@ $finder->dump();
 
 ![img](https://i.imgur.com/dfHdrG7.png)
 
-### Custom column types
+## Renaming columns (column aliases)
+
+Sometimes you have complicated fieldnames like `my_great_module_field_foo` and you just want to get the values of this field as column `foo` in your result:
+
+```php
+$finder->addColumns(['my_great_module_field_foo' => 'foo']);
+```
+
+## Custom column types
 
 You can add custom column types easily. Just place them in a folder and tell RockFinder to scan this directory for columnTypes:
 
@@ -97,18 +105,95 @@ $modules->get('RockFinder3Master')->loadColumnTypes('/your/directory/');
 
 See the existing columnTypes as learning examples.
 
+## Working with options fields
+
+By default RockFinder will query the `data` column in the DB for each requested field. That's fine for lots of fields (like Text or Textarea fields), but for more complex fields this will often just return an ID value instead of the value that we would like to see (like a file name, an option value, etc):
+
+```php
+$RockFinder3
+  ->find("template=cat")
+  ->addColumns(['title', 'sex'])
+  ->dump();
+```
+
+![img](https://i.imgur.com/teIe2va.png)
+
+### Option 1: OptionsValue and OptionsTitle columnTypes
+
+In case of the `Options` Fieldtype we have a `title` and a `value` entry for each option. That's why RockFinder ships with two custom columnTypes that query those values directly from the DB (thanks to a PR from David Karich @RockFinder2). You can even get both values in one single query:
+
+```php
+$RockFinder3
+  ->find("template=cat")
+  ->addColumns([
+    'title',
+    'sex' => 'sex_id',
+    'OptionsValue:sex' => 'sex_value',
+    'OptionsTitle:sex' => 'sex_title',
+  ])
+  ->dump();
+```
+
+![img](https://i.imgur.com/H4jpr2E.png)
+
+Note that the column aliases are necessary here to prevent duplicate columns with the same name!
+
+### Option 2: Options relation
+
+Option 1 is very handy but also comes with a drawback: It loads all values and all titles into the returned resultset. In the example above this means we'd have around 50x `m`, 50x `f`, 50x `Male` and 50x `female` on 100 rows. Multiply that by the number of rows in your resultset and you get a lot of unnecessary data!
+
+Option 2 lets you save options data in the finder's `getData()->option` property so that you can then work with it at runtime (like via JS in a grid that only renders a subset of the result):
+
+```php
+$finder = $RockFinder3
+  ->find("template=cat")
+  ->addColumns([
+    'title',
+    'sex',
+  ])
+  ->addOptions('sex');
+db($finder->getData());
+```
+
+![img](https://i.imgur.com/3tFUwFk.png)
+
+```php
+$data = $finder->getData();
+$data->options->sex[2]->value; // f
+$data->options->sex[2]->title; // Female
+```
+
+You can also use the helper functions:
+
+```php
+$finder->getOptions('sex');
+$finder->getOption('sex', 2);
+```
+![img](https://i.imgur.com/ujyx7gD.png)
+
+![img](hr.svg)
+
+# Multi-Language
 
 
+![img](hr.svg)
 
-
-
-
+# Joins
 
 
 
 ![img](hr.svg)
 
 # Differences to RockFinder 1 and 2
+
+## RockFinder1
+
+* Had a custom implementation for querying the DB.
+
+## RockFinder2
+
+* Already worked based on the internal DB query selector engine.
+
 
 RockFinder2 has an API to be queried via www.example.com/your-secred-rockfinder-url
 
