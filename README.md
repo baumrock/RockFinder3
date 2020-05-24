@@ -407,13 +407,19 @@ $cats = $RockFinder3
   ->addColumns(['title', 'owner'])
   ->join($owners)
   ->getSQL();
+```
 
-db($RockFinder3->getObject("SELECT AVG(`owner:age`) FROM ($cats) AS tmp"));
+Get average age of all owners:
+
+```php
+db($RockFinder3->getObject("
+  SELECT AVG(`owner:age`) FROM ($cats) AS tmp
+"));
 ```
 
 ![img](https://i.imgur.com/NwqatSv.png)
 
-You SQL skills are the limit ;)
+Get average age of all owners older than 50 years:
 
 ```php
 db($RockFinder3->getObject("
@@ -427,12 +433,12 @@ db($RockFinder3->getObject("
 
 ![img](https://i.imgur.com/05rQ7oQ.png)
 
-You see that you can build very complex queries with very little and easy SQL!
+You SQL skills are the limit!
 
 ![img](hr.svg)
 
 # Thank you
 
-...for reading the docs and using RockFinder3. If you find RockFinder3 helpful consider giving it a star on github or [saying thank you](https://www.paypal.me/baumrock). I'm also always happy to get feedback in the PW forum!
+...for reading thus far and for using RockFinder3. If you find RockFinder3 helpful consider giving it a star on github or [saying thank you](https://www.paypal.me/baumrock). I'm also always happy to get feedback in the PW forum!
 
 **Happy finding!**
