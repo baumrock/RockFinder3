@@ -72,14 +72,17 @@ abstract class Column extends \ProcessWire\Wire {
    */
   public function setSelect() {
     $lang = $this->user->language;
-    $type = $this->fields->get($this->name)->type;
     $this->select = "`{$this->tableAlias}`.`data`";
 
     // early exit if user has default language
     if($lang->isDefault) return;
 
+    // early exit if it is not a regular field (column of pages table)
+    $field = $this->fields->get($this->name);
+    if(!$field) return;
+
     // early exit if field is single-language
-    if(!$type instanceof \ProcessWire\FieldtypeLanguageInterface) return;
+    if(!$field->type instanceof \ProcessWire\FieldtypeLanguageInterface) return;
 
     // multi-lang field
     $this->select = "COALESCE(NULLIF(`{$this->tableAlias}`.`data{$lang->id}`, ''), `{$this->tableAlias}`.`data`)";
