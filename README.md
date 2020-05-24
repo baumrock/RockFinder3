@@ -29,7 +29,7 @@ Possible use cases:
 
 ## Getting help / Contribute
 
-* If you need help please head over to the PW forum thread and ask your question there: // TODO
+* If you need help please head over to the PW forum thread and ask your question there: https://processwire.com/talk/topic/23715-rockfinder3-combine-the-power-of-processwire-selectors-and-sql/
 * If you found an issue/bug please report it on [GitHub](https://github.com/baumrock/RockFinder3/issues).
 * If you can help to improve RockFinder I'm happy to accept [Pull Requests](https://github.com/baumrock/RockFinder3/pulls).
 
