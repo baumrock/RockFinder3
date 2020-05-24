@@ -97,6 +97,7 @@ class RockFinder3 extends WireData implements Module {
   /**
    * Add columns to finder
    * @param array $columns
+   * @return RockFinder3
    */
   public function addColumns($columns) {
     if(!$this->query) throw new WireException("Setup the selector before calling addColumns()");
@@ -138,7 +139,7 @@ class RockFinder3 extends WireData implements Module {
   /**
    * Add options from field
    * @param array|string $field
-   * @return void
+   * @return RockFinder3
    */
   public function addOptions($field) {
     if(is_array($field)) {
