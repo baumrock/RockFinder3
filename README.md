@@ -2,13 +2,22 @@
 
 Combine the power of ProcessWire selectors and SQL
 
+![img](https://i.imgur.com/g3fBlPa.png)
+
 # Preface
 
 ### Why this module exists
 
-The basic concept of RockFinder is to make it easy to get large numbers of data while keeping the number of SQL queries and consumed memory as low as possible. Regular `$pages->find()` queries do load all found pages into memory which can be a no-go. We have `$pages->findMany()` that theoretically lets you load thousands of pages, but what if you only wanted to get an average value of some thousand rows of data? Looping them in PHP to get the average value would really not be the best option. Writing custom SQL on the other hand can be quite complex, because you need to understand how PW works under the hood. Field data is stored in separate DB tables that you need to join, you need to take care about access control, page status (unpublished, trashed, hidden, etc) and finally one might have a multilanguage setup...
+Initially RockFinder1 was built to feed client side datatables with an array of ProcessWire page data. Loading all pages into memory via a `$pages->find()` query can quickly get inefficient. Querying the database directly via SQL can quickly get very complex on the other hand.
 
-RockFinder is here to help you in such situations and makes finding (or aggregating) data stored in your ProcessWire installation easy, efficient and hopefully fun.
+RockFinder is here to help you in such situations and makes finding (or aggregating) data stored in your ProcessWire installation easy, efficient and fun.
+
+Possible use cases:
+
+* Find data for any kind of tabular data (tabulator.info, datatables.net, ag-grid.com).
+* Reduce the amount of necessary SQL queries ([see here](https://processwire.com/talk/topic/22205-rockfinder2-combine-the-power-of-pw-selectors-and-sql/?do=findComment&comment=200406)).
+* Find data for a CSV or XML export.
+* Find data for a REST-API.
 
 ### Differences to previous RockFinder modules
 
@@ -30,10 +39,9 @@ If `$finder` is used in the examples it is supposed that you defined that variab
 
 ```php
 // use this
-$finder = $modules->get("RockFinder3");
-$finder->find("template=foo");
+$finder = $modules->get("RockFinder3")->find("template=foo");
 
-// or this
+// or the shortcut via the RockFinder3 API variable
 $finder = $RockFinder3->find("template=foo");
 ```
 
@@ -41,7 +49,7 @@ $finder = $RockFinder3->find("template=foo");
 
 # Basic Concept
 
-The concept of RockFinder is to get the base query of the `$pages->find()` call and modify it for our needs so that we get the best of both worlds: Easy PW selectors and powerful SQL operations.
+The concept of RockFinder is to get the base query of the `$pages->find()` call and modify it for our needs so that we get the best of both worlds: Easy PW selectors and powerful and efficient SQL operations.
 
 In PW every find operation is turned into a `DatabaseQuerySelect` object. This class is great for working with SQL via PHP because you can easily modify the query at any time without complex string concatenation operations:
 
@@ -62,7 +70,7 @@ Install the RockFinder3Master module. The master module is an autoload module th
 In the most basic setup the only thing you need to provide to a RockFinder is a regular PW selector via the `find()` method:
 
 ```php
-db($RockFinder3->find("template=admin, limit=3"));
+$RockFinder3->find("template=admin, limit=3");
 ```
 
 ## Adding columns
@@ -70,10 +78,9 @@ db($RockFinder3->find("template=admin, limit=3"));
 You'll most likely don't need only ids, so there is the `addColumns()` method for adding additional columns:
 
 ```php
-$finder = $RockFinder3
+$RockFinder3
   ->find("template=admin, limit=3")
   ->addColumns(['title', 'created']);
-db($finder);
 ```
 
 ![img](https://i.imgur.com/k0gHwXW.png)
@@ -85,10 +92,10 @@ This makes it possible to easily add any field data of the requested page.
 For small finders Tracy's `dump()` feature is enough, but if you have more complex finders or you have thousands of pages this might get really inconvenient. That's why RockFinder3 ships with a custom `dump()` method that works in the tracy console and turns the result of the finder into a paginated table (using tabulator.info):
 
 ```php
-$finder = $RockFinder3
+$RockFinder3
   ->find("id>0")
-  ->addColumns(['title', 'created']);
-$finder->dump();
+  ->addColumns(['title', 'created'])
+  ->dump();
 ```
 
 ![img](https://i.imgur.com/dfHdrG7.png)
@@ -98,7 +105,7 @@ $finder->dump();
 Sometimes you have complicated fieldnames like `my_great_module_field_foo` and you just want to get the values of this field as column `foo` in your result:
 
 ```php
-$finder->addColumns(['my_great_module_field_foo' => 'foo']);
+$RockFinder3->find(...)->addColumns(['my_great_module_field_foo' => 'foo']);
 ```
 
 ## Custom column types
@@ -106,12 +113,15 @@ $finder->addColumns(['my_great_module_field_foo' => 'foo']);
 You can add custom column types easily. Just place them in a folder and tell RockFinder to scan this directory for columnTypes:
 
 ```php
+// do this on the master module!
 $modules->get('RockFinder3Master')->loadColumnTypes('/your/directory/');
 ```
 
 See the existing columnTypes as learning examples.
 
-## Working with options fields
+![img](hr.svg)
+
+# Working with options fields
 
 By default RockFinder will query the `data` column in the DB for each requested field. That's fine for lots of fields (like Text or Textarea fields), but for more complex fields this will often just return an ID value instead of the value that we would like to see (like a file name, an option value, etc):
 
@@ -151,22 +161,20 @@ Option 1 is very handy but also comes with a drawback: It loads all values and a
 Option 2 lets you save options data in the finder's `getData()->option` property so that you can then work with it at runtime (like via JS in a grid that only renders a subset of the result):
 
 ```php
-$finder = $RockFinder3
+$RockFinder3
   ->find("template=cat")
   ->addColumns([
     'title',
     'sex',
   ])
   ->addOptions('sex');
-db($finder->getData());
 ```
 
-![img](https://i.imgur.com/3tFUwFk.png)
+![img](https://i.imgur.com/ocF3UJt.png)
 
 ```php
-$data = $finder->getData();
-$data->options->sex[2]->value; // f
-$data->options->sex[2]->title; // Female
+$finder->options->sex[2]->value; // f
+$finder->options->sex[2]->title; // Female
 ```
 
 You can also use the helper functions:
@@ -184,13 +192,14 @@ $finder->getOption('sex', 2);
 Usually data of a field is stored in the `data` db column of the field. On a multi-language setup though, the data is stored in the column for the user's current language, eg `data123`. This makes the queries more complex, because you need to fallback to the default language if the current language's column has no value. RockFinder3 does all that for you behind the scenes and does just return the column value in the users language:
 
 ```php
-$this->user->language = $languages->get(1245);
-$finder = $RockFinder3
+$user->language = $languages->get(1245);
+$RockFinder3
   ->find("template=cat")
   ->addColumns([
     'title',
     'sex',
-  ]);
+  ])
+  ->dump();
 ```
 
 ![img](https://i.imgur.com/1R6ukB8.png)
@@ -213,8 +222,66 @@ This will use these values behind the scenes (here for the `title` field):
 
 ![img](hr.svg)
 
+# Page Reference Fields and Relations
+
+We know now how to query simple fields, but what about fields that can store multiple values? The maybe most important field of that kind is a page reference field. See this example where we have a page reference field on template `cat` that lets us choose `kittens` for this cat:
+
+![img](https://i.imgur.com/QoKCU7i.png)
+
+This is what happens if we query the field in our finder:
+
+![img](https://i.imgur.com/JcdULfz.png)
+
+So, how do we get data of those referenced pages? We might want to list the name of the kitten (the `title` field). This could be done in a similar way as we did on the options field above. But what if we also wanted to show other field data of that kitten?
+
+![img](https://i.imgur.com/tXddItx.png)
+
+It would get really difficult to show all that informations in one single cell of output! **Relations** to the rescue:
+
+```php
+// setup kittens finder that can later be added as relation
+$kittens = $RockFinder3
+  ->find("template=kitten")
+  ->setName("kittens")
+  ->addColumns(['title', 'OptionsTitle:sex', 'age']);
+
+// setup main finder that finds cats
+$finder = $RockFinder3
+  ->find("template=cat,limit=1")
+  ->setName("cats")
+  ->addColumns(['title', 'kittens'])
+  ->addRelation($kittens);
+
+// dump objects
+db($finder);
+db($finder->relations->first());
+```
+
+![img](https://i.imgur.com/IFkxrmW.png)
+
+If you need to access those kittens `258138,258171,258137` via PHP you can do this:
+
+```php
+$relation = $finder->relations->first();
+db($relation->getRowsByIds("258138,258171,258137"));
+db($relation->getRowById(258138));
+```
+
+![img](https://i.imgur.com/71UHptF.png)
+
+![img](hr.svg)
+
 # Joins
 
+# Aggregations
+
+# getSQL()
+
+# Adding custom SQL
+
+```php
+$finder->query->where("pages.id IN (1,2,3)");
+```
 
 
 ![img](hr.svg)
@@ -239,9 +306,6 @@ This should really not be part of the rockfinder module! If there is a need for 
 ```php
 db($RockFinder3->find("template=foo")->addColumns(['foo', 'bar'])->getData());
 ```
-
-
-
 
 
 

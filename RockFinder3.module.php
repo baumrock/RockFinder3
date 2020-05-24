@@ -21,6 +21,12 @@ class RockFinder3 extends WireData implements Module {
    * @var WireArray
    */
   public $columns;
+
+  /**
+   * Relations that are added to this finder
+   * @var WireArray
+   */
+  public $relations;
   
   /**
    * Options that are added to this finder
@@ -28,13 +34,13 @@ class RockFinder3 extends WireData implements Module {
    */
   public $options;
 
+  /** @var array */
+  private $rows;
+
   private $selector;
 
-  /**
-   * dataObject cache
-   * @var object
-   */
-  private $dataObject;
+  /** @var array */
+  private $limitRowsTo;
 
   public static function getModuleInfo() {
     return [
@@ -55,6 +61,7 @@ class RockFinder3 extends WireData implements Module {
     $this->name = uniqid();
     $this->master = $this->modules->get('RockFinder3Master');
     $this->columns = $this->wire(new WireArray);
+    $this->relations = $this->wire(new WireArray());
     $this->options = $this->wire(new WireData);
   }
 
@@ -128,6 +135,22 @@ class RockFinder3 extends WireData implements Module {
   }
 
   /**
+   * Add relation to this finder
+   * 
+   * @param RockFinder3 $relation
+   * @param bool $returnAll
+   * @return RockFinder3
+   */
+  public function addRelation($relation, $returnAll = false) {
+    if(!$returnAll) $relation->limitRowsTo = $this;
+    if(!$this->columns->has($relation->name)) {
+      throw new WireException($relation->name . " not found: The name of your relation must exist as column in the main finder");
+    }
+    $this->relations->add($relation);
+    return $this;
+  }
+
+  /**
    * Set selector of this finder
    * @param string|array|DatabaseQuerySelect $selector
    * @return RockFinder3
@@ -180,54 +203,13 @@ class RockFinder3 extends WireData implements Module {
   /** ########## END CHAINABLE PUBLIC API METHODS ########## */
   
   /** ########## GET DATA ########## */
-  /**
-   * Get data object of this finder
-   * @return object
-   */
-  public function getData() {
-    // if possible return cached data
-    if($this->dataObject) return $this->dataObject;
-
-    $mainData = $this->getMainData();
-    $this->loadRelationsData($mainData);
-    
-    $data = new \RockFinder3\FinderData();
-    $data->name = $this->name;
-    $data->data = $mainData;
-    $data->options = $this->options;
-    $data->relations = $this->relations;
-
-    $this->dataObject = $data;
-    return $data;
-  }
-  
-  /**
-   * Get main data from PW selector
-   * 
-   * If a column index is provided it will return a plain array of values stored
-   * in that column.
-   * 
-   * @param int $columnindex
-   * @return array
-   */
-  public function getMainData($columnindex = null) {
-    // if data is already set return it
-    if($this->mainData) return $this->mainData;
-
-    // if no query is set return an empty array
-    if(!$this->query) return [];
-
-    $result = $this->query->execute();
-    if($columnindex === null) return $result->fetchAll(\PDO::FETCH_OBJ);
-    else return $result->fetchAll(\PDO::FETCH_COLUMN, $columnindex);
-  }
 
   /**
    * Return options by name
    * @return array
    */
   public function getOptions($name) {
-    return $this->getData()->options->{$name};
+    return $this->options->{$name};
   }
 
   /**
@@ -237,17 +219,76 @@ class RockFinder3 extends WireData implements Module {
   public function getOption($name, $index) {
     return $this->getOptions($name)[$index];
   }
-  
+
   /**
-   * Load data of all relations
-   * @param array $maindata
-   * @return void
+   * Get plain row array ready for tabulator
+   * This returns only the array values without page-id-keys
+   * otherwise the resulting tabulator array on the client side is invalid.
+   * @return array
    */
-  public function loadRelationsData($maindata) {
-    // TODO
+  public function getRowArray() {
+    return array_values($this->getRows());
+  }
+
+  /**
+   * Get object by its id property
+   * @param string|int $id
+   * @return stdClass
+   */
+  public function getRowById($id) {
+    return $this->getRows()[(int)$id];
+  }
+
+  /**
+   * Get rows by id string
+   * @param string|array $ids
+   * @return array
+   */
+  public function getRowsByIds($ids) {
+    $rows = [];
+    if(is_string($ids)) $ids = explode(",", $ids);
+    foreach($ids as $id) $rows[] = $this->getRowById($id);
+    return $rows;
+  }
+
+  /**
+   * Get all rows of this finder
+   * @return array
+   */
+  public function getRows() {
+    if($this->rows) return $this->rows;
+
+    // check if a row limit is set for this finder
+    // this is the case when a relation is set to return only the subset
+    // of rows that are listed in the main finder
+    $this->applyRowLimit();
+
+    // now execute the query
+    $result = $this->query->execute();
+    $this->rows = $result->fetchAll(\PDO::FETCH_OBJ);
+
+    $rows = [];
+    foreach($this->rows as $row) $rows[(int)$row->id] = $row;
+    return $this->rows = $rows;
   }
   
   /** ########## END GET DATA ########## */
+
+  private function applyRowLimit() {
+    if(!$this->limitRowsTo) return;
+
+    // get ids that point to that relation
+    $ids = [];
+    $finder = $this->limitRowsTo;
+    $column = $this->name; // colname = name of current relation
+    foreach($finder->getRows() as $row) {
+      $ids = array_merge($ids, explode(",", $row->$column));
+    }
+    
+    // now restrict the relation to these ids
+    $ids = implode(",", $ids);
+    $this->query->where("pages.id IN ($ids)");
+  }
 
   /**
    * Add column to finder
@@ -259,7 +300,6 @@ class RockFinder3 extends WireData implements Module {
   private function addColumn($column, $type = null, $alias = null) {
     if(!$type) $type = $this->getType($column);
     if(!$alias) $alias = $column;
-    $query = $this->query;
 
     // add this column to columns array
     $colname = (string)$column;
@@ -273,10 +313,8 @@ class RockFinder3 extends WireData implements Module {
     // get the column object and apply its changes to the current finder
     $colType = $this->master->columnTypes->get("type=$type");
     if(!$colType) throw new WireException("No column type class for $type");
-    
-    $col = $colType
-      ->getNew($colname, $alias)
-      ->applyTo($this);
+    $col = $colType->getNew($colname, $alias);
+    $col->applyTo($this);
 
     // add column to array of columns
     $this->columns->add($col);
@@ -284,6 +322,9 @@ class RockFinder3 extends WireData implements Module {
 
   /**
    * Dump this finder to the tracy console
+   * 
+   * Set title to TRUE to dump the finder object.
+   * 
    * @return void
    */
   public function dump($title = null, $options = null) {
@@ -297,7 +338,7 @@ class RockFinder3 extends WireData implements Module {
     ]);
     $settings->setArray($options ?: []);
     $settings = $settings->getArray();
-    $settings['data'] = $this->getData()->data;
+    $settings['data'] = $this->getRowArray();
     $json = json_encode($settings);
 
     $id = uniqid();
@@ -308,12 +349,15 @@ class RockFinder3 extends WireData implements Module {
     $link = "<a href='$url'>$url</a>";
     $msg = "Tabulator assets are not loaded, please try again here: $link";
 
-    if($title) echo "<h2>$title</h2>";
+    if($title === true) db($this);
+    elseif($title) echo "<h2>$title</h2>";
     echo "<div id='tab_$id'>loading...</div>
     <script>
     if(typeof Tabulator == 'undefined') $('#tab_$id').html(\"$msg\");
     else new Tabulator('#tab_$id', $json);
     </script>";
+
+    return $this;
   }
 
   /**
@@ -379,7 +423,9 @@ class RockFinder3 extends WireData implements Module {
       'name' => $this->name,
       'selector' => $this->selector,
       'columns' => $this->columns,
-      'getData()' => $this->getData(),
+      'options' => $this->options,
+      'relations' => $this->relations,
+      'getRows()' => $this->getRows(),
     ];
   }
 }
