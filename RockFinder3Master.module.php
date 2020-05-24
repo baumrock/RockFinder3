@@ -15,7 +15,7 @@ class RockFinder3Master extends WireData implements Module {
 
   /** @var array */
   public $baseColumns;
-  
+
   /** @var WireArray */
   public $columnTypes;
 
@@ -90,10 +90,10 @@ class RockFinder3Master extends WireData implements Module {
 
   /**
    * Return a new RockFinder3
-   * 
+   *
    * This makes it easy to get new finders via the API variable:
    * $finder = $RockFinder3->find("template=foo")->addColumns(...);
-   * 
+   *
    * @return RockFinder3
    */
   public function find($selector) {
