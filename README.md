@@ -441,4 +441,4 @@ You SQL skills are the limit!
 
 ...for reading thus far and for using RockFinder3. If you find RockFinder3 helpful consider giving it a star on github or [saying thank you](https://www.paypal.me/baumrock). I'm also always happy to get feedback in the PW forum!
 
-**Happy finding!**
+**Happy finding :)**
