@@ -15,7 +15,7 @@ class RockFinder3 extends WireData implements Module {
 
   /** @var RockFinder3Master */
   public $master;
-  
+
   /**
    * Columns that are added to this finder
    * @var WireArray
@@ -27,13 +27,13 @@ class RockFinder3 extends WireData implements Module {
    * @var WireArray
    */
   public $relations;
-  
+
   /**
    * Joins that are added to this finder
    * @var WireArray
    */
   public $joins;
-  
+
   /**
    * Options that are added to this finder
    * @var WireData
@@ -85,7 +85,7 @@ class RockFinder3 extends WireData implements Module {
   }
 
   /** ########## CHAINABLE PUBLIC API METHODS ########## */
-  
+
   /**
    * Add a single column by name
    * @return RockFinder3
@@ -134,7 +134,7 @@ class RockFinder3 extends WireData implements Module {
 
     return $this;
   }
-  
+
   /**
    * Add options from field
    * @param array|string $field
@@ -145,11 +145,11 @@ class RockFinder3 extends WireData implements Module {
       foreach($field as $f) $this->addOptions($f);
       return $this;
     }
-    
+
     $fieldname = (string)$field;
     $field = $this->fields->get($fieldname);
     if(!$field) throw new WireException("Field $fieldname not found");
-    
+
     $data = [];
     foreach($field->type->getOptions($field) as $option) {
       $opt = $this->wire(new WireData()); /** @var WireData $opt */
@@ -163,7 +163,7 @@ class RockFinder3 extends WireData implements Module {
 
   /**
    * Add relation to this finder
-   * 
+   *
    * @param RockFinder3 $relation
    * @param bool $returnAll
    * @return RockFinder3
@@ -210,7 +210,7 @@ class RockFinder3 extends WireData implements Module {
 
   /**
    * Join slave finder to master finder
-   * 
+   *
    * @param RockFinder3 $slave
    * @param array $options
    * @return RockFinder3
@@ -228,7 +228,7 @@ class RockFinder3 extends WireData implements Module {
       'removeID' => false, // dont remove the column used for the join
     ]);
     $opt->setArray($options);
-    
+
     // create new join finder
     /** @var RockFinder3 */
     $join = $this->modules->get('RockFinder3');
@@ -237,7 +237,7 @@ class RockFinder3 extends WireData implements Module {
     $join->joinColName = $slave->name; // colname for join
     $join->removeJoinCol = $opt->removeID; // remove join base column?
     $join->setName("join_{$slave->name}_".uniqid());
-    
+
     // add columns
     if(!$opt->columns) $opt->columns = $slave->columns;
     foreach($opt->columns as $colname) {
@@ -272,7 +272,7 @@ class RockFinder3 extends WireData implements Module {
   }
 
   /** ########## END CHAINABLE PUBLIC API METHODS ########## */
-  
+
   /** ########## GET DATA ########## */
 
   /**
@@ -339,7 +339,7 @@ class RockFinder3 extends WireData implements Module {
     $rows = $result->fetchAll(\PDO::FETCH_OBJ);
     return $this->rows = $this->master->addRowIds($rows);
   }
-  
+
   /** ########## END GET DATA ########## */
 
   /**
@@ -409,7 +409,7 @@ class RockFinder3 extends WireData implements Module {
     foreach($finder->getRows() as $row) {
       $ids = array_merge($ids, explode(",", $row->$column));
     }
-    
+
     // now restrict the relation to these ids
     $ids = implode(",", $ids);
     $this->query->where("pages.id IN ($ids)");
@@ -417,9 +417,9 @@ class RockFinder3 extends WireData implements Module {
 
   /**
    * Dump this finder to the tracy console
-   * 
+   *
    * Set title to TRUE to dump the finder object.
-   * 
+   *
    * @return void
    */
   public function dump($title = null, $options = null) {
@@ -435,20 +435,21 @@ class RockFinder3 extends WireData implements Module {
     $settings = $settings->getArray();
     $settings['data'] = $this->getRowArray();
     $json = json_encode($settings);
-
     $id = uniqid();
-    $url = $this->pages->get([
-      "has_parent" => 2,
-      "name" => ProcessRockFinder3::pageName,
-    ])->url;
-    $link = "<a href='$url'>$url</a>";
-    $msg = "Tabulator assets are not loaded, please try again here: $link";
 
     if($title === true) db($this);
     elseif($title) echo "<h2>$title</h2>";
     echo "<div id='tab_$id'>loading...</div>
     <script>
-    if(typeof Tabulator == 'undefined') $('#tab_$id').html(\"$msg\");
+    if(typeof Tabulator == 'undefined') {
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/tabulator-tables@4.6.3/dist/css/tabulator.min.css';
+      document.getElementsByTagName('head')[0].appendChild(link);
+      tracyJSLoader.load('https://unpkg.com/tabulator-tables@4.6.3/dist/js/tabulator.min.js', function() {
+        new Tabulator('#tab_$id', $json);
+      });
+    }
     else new Tabulator('#tab_$id', $json);
     </script>";
 
@@ -466,9 +467,9 @@ class RockFinder3 extends WireData implements Module {
 
   /**
    * Get the type of this column
-   * 
+   *
    * The type is then used for getting the proper data for the column.
-   * 
+   *
    * @param string $column
    * @return string
    */
@@ -489,7 +490,7 @@ class RockFinder3 extends WireData implements Module {
     }
     else return 'NotFound';
   }
-  
+
   /**
    * Return current sql query string
    * @return string
@@ -532,7 +533,7 @@ class RockFinder3 extends WireData implements Module {
   private function isBaseColumn($column) {
     return in_array($column, $this->master->baseColumns);
   }
-  
+
   /**
    * Prettify SQL string
    * @return string
