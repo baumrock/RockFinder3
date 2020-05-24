@@ -8,7 +8,7 @@
  */
 require("Column.php");
 require("FinderData.php");
-class RockFinder3Master extends WireData implements Module, ConfigurableModule {
+class RockFinder3Master extends WireData implements Module {
 
   /** @var WireArray */
   public $finders;
@@ -22,7 +22,7 @@ class RockFinder3Master extends WireData implements Module, ConfigurableModule {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3Master',
-      'version' => '1.0.0',
+      'version' => '1.0.1',
       'summary' => 'Master Instance of RockFinder3 that is attached as PW API Variable',
       'autoload' => 9000,
       'singular' => true,
@@ -131,55 +131,6 @@ class RockFinder3Master extends WireData implements Module, ConfigurableModule {
       $rows[(int)$row->id] = $row;
     }
     return $rows;
-  }
-
-  /**
-  * Config inputfields
-  * @param InputfieldWrapper $inputfields
-  */
-  public function getModuleConfigInputfields($inputfields) {
-    if($this->input->post->installProcessModule) {
-      $this->modules->install('ProcessRockFinder3');
-    }
-
-    if(!$this->modules->isInstalled('ProcessRockFinder3')) {
-      /** @var InputfieldSubmit $b */
-      $b = $this->wire('modules')->get('InputfieldSubmit');
-      $b->name = 'installProcessModule';
-      $b->value = 'Install the RockFinder3 ProcessModule';
-      $b->icon = 'bolt';
-
-      $inputfields->add([
-        'type' => 'markup',
-        'icon' => 'question-circle-o',
-        'label' => 'Do you want to install the ProcessModule?',
-        'description' => "The ProcessModule is optional but lightweight. It helps you creating and debugging Finders via the tracy console. To install it, click the button below:",
-        'value' => $b->render(),
-      ]);
-    }
-    else {
-      $url = $this->pages->get("has_parent=2, name=".ProcessRockFinder3::pageName)->url;
-      $link = "<a href='$url'>Click here to open it and write your first finder!</a>";
-      $inputfields->add([
-        'type' => 'markup',
-        'icon' => 'check',
-        'label' => 'RockFinder3 Process Module',
-        'value' => "The process module is installed - $link",
-      ]);
-    }
-    return $inputfields;
-  }
-
-  /**
-   * Uninstall actions
-   */
-  public function ___uninstall() {
-    // we do remove both modules manually here
-    // the process module can not be listed in getModuleInfo because it is optional
-    // if the process module is installed, it causes RockFinder3 to re-install
-    // that's why we remove it again here to make sure it is uninstalled
-    $this->modules->uninstall('ProcessRockFinder3');
-    $this->modules->uninstall('RockFinder3');
   }
 
   public function __debugInfo() {
