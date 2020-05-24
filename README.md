@@ -34,21 +34,9 @@ Possible use cases:
 
 ## Example Snippets
 
-TracyDebugger is not necessary for using RockFinder3 but it is recommended. All examples in this readme show dumps of RockFinder instances using Tracy. The ProcessModule of RockFinder3 does use Tracy for dumping the results, so TracyDebugger is required for the ProcessModule to run.
+TracyDebugger is not necessary for using RockFinder3 but it is recommended. All examples in this readme show dumps of RockFinder instances using the Tracy Console. The ProcessModule of RockFinder3 does use Tracy for dumping the results, so TracyDebugger is required for the ProcessModule to run.
 
-If `$finder` is used in the examples it is supposed that you defined that variable before:
-
-```php
-// use this
-$finder = $modules->get("RockFinder3")->find("template=foo");
-
-// or the shortcut via the RockFinder3 API variable
-$finder = $RockFinder3->find("template=foo");
-```
-
-### Special thanks
-
-...to Adrian once more for the brilliant TracyDebugger and the quick help for adding dumping support to the Tracy Console! This was tremendously helpful for developing this module and also for writing these docs.
+**Special thanks to Adrian once more for the brilliant TracyDebugger and the quick help for adding dumping support to the Tracy Console! This was tremendously helpful for developing this module and also for writing these docs.**
 
 ![img](hr.svg)
 
@@ -75,7 +63,11 @@ Install the RockFinder3Master module. The master module is an autoload module th
 In the most basic setup the only thing you need to provide to a RockFinder is a regular PW selector via the `find()` method:
 
 ```php
-$RockFinder3->find("template=admin, limit=3");
+// either via the API variable
+$RockFinder3->find("template=foo");
+
+// or via a modules call
+$modules->get('RockFinder3')->find("template=foo");
 ```
 
 ## Adding columns
