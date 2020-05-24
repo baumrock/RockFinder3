@@ -322,14 +322,12 @@ db($finder->relations->first());
 
 ![img](https://i.imgur.com/IFkxrmW.png)
 
-**NOTE**
-
-Look at the result of the `kittens` finder: It returned three rows as result even though we did not define any limit on the initial setup of that finder! That is because RockFinder will automatically return only the rows of the relation that are listed in the column of the main finder!
+**NOTE** Look at the result of the `kittens` finder: It returned three rows as result even though we did not define any limit on the initial setup of that finder! That is because RockFinder will automatically return only the rows of the relation that are listed in the column of the main finder!
 
 You can see what happens in the SQL query:
 
 ```php
-db($finder->relations->first()->getSQL());
+$finder->relations->first()->dumpSQL();
 ```
 
 ```sql
