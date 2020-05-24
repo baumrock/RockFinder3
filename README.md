@@ -25,6 +25,7 @@ Possible use cases:
 * RF3 fully supports [multi-language](#multi-language).
 * RF3 makes it super-easy to [add custom columnTypes](#custom-column-types).
 * RF3 makes it easier to use [custom SQL statements](#custom-sql).
+* No bloat! The module does just do one thing: Finding data.
 
 ## Getting help / Contribute
 
