@@ -35,7 +35,7 @@ Possible use cases:
 
 ## Example Snippets
 
-TracyDebugger is not necessary for using RockFinder3 but it is recommended. All examples in this readme show dumps of RockFinder instances using the Tracy Console. The ProcessModule of RockFinder3 does use Tracy for dumping the results, so TracyDebugger is required for the ProcessModule to run.
+TracyDebugger is not necessary for using RockFinder3 but it is recommended. All examples in this readme show dumps of RockFinder instances using the Tracy Console.
 
 **Special thanks to Adrian once more for the brilliant TracyDebugger and the quick help for adding dumping support to the Tracy Console! This was tremendously helpful for developing this module and also for writing these docs.**
 
@@ -334,12 +334,12 @@ $finder->relations->first()->dumpSQL();
 ```sql
 SELECT
   `pages`.`id` AS `id`,
-  `_field_title_5eca947b3da27`.`data` AS `title` 
-FROM `pages` 
+  `_field_title_5eca947b3da27`.`data` AS `title`
+FROM `pages`
 LEFT JOIN `field_title` AS `_field_title_5eca947b3da27`
-  ON `_field_title_5eca947b3da27`.`pages_id` = `pages`.`id` 
-WHERE (pages.templates_id=51) 
-AND (pages.status<1024) 
+  ON `_field_title_5eca947b3da27`.`pages_id` = `pages`.`id`
+WHERE (pages.templates_id=51)
+AND (pages.status<1024)
 AND pages.id IN (258138,258171,258137) /* here is the limit */
 GROUP BY pages.id
 ```
