@@ -40,6 +40,13 @@ abstract class Column extends \ProcessWire\Wire {
   }
 
   /**
+   * Get method to support $columns->each('name') etc.
+   */
+  public function get($key) {
+    return $this->$key;
+  }
+
+  /**
    * Get a new instance of this columnType
    * @return Column
    */

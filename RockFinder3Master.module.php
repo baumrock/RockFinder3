@@ -103,6 +103,37 @@ class RockFinder3Master extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Get first row of resultset as stdClass object
+   * @return object
+   */
+  public function getObject($sql) {
+    return $this->getObjects($sql)[0];
+  }
+
+  /**
+   * Execute sql query and return result as array of stdClass objects
+   * @return array
+   */
+  public function getObjects($sql) {
+    $result = $this->database->query($sql);
+    return $this->addRowIds($result->fetchAll(\PDO::FETCH_OBJ));
+  }
+
+  /**
+   * Set array keys to id property of objects if one exists
+   * This makes it possible to access rows by their id key
+   * @return array
+   */
+  public function addRowIds($_rows) {
+    $rows = [];
+    foreach($_rows as $row) {
+      if(!property_exists($row, "id")) return $_rows;
+      $rows[(int)$row->id] = $row;
+    }
+    return $rows;
+  }
+
+  /**
   * Config inputfields
   * @param InputfieldWrapper $inputfields
   */

@@ -29,6 +29,12 @@ class RockFinder3 extends WireData implements Module {
   public $relations;
   
   /**
+   * Joins that are added to this finder
+   * @var WireArray
+   */
+  public $joins;
+  
+  /**
    * Options that are added to this finder
    * @var WireData
    */
@@ -37,7 +43,19 @@ class RockFinder3 extends WireData implements Module {
   /** @var array */
   private $rows;
 
-  private $selector;
+  public $selector;
+
+  /**
+   * Reference to the main finder (used by joined finders)
+   * @var RockFinder3
+   */
+  public $main;
+
+  /** @var string */
+  private $joinColName;
+
+  /** @var bool */
+  private $removeJoinCol;
 
   /** @var array */
   private $limitRowsTo;
@@ -62,11 +80,20 @@ class RockFinder3 extends WireData implements Module {
     $this->master = $this->modules->get('RockFinder3Master');
     $this->columns = $this->wire(new WireArray);
     $this->relations = $this->wire(new WireArray());
+    $this->joins = $this->wire(new WireArray());
     $this->options = $this->wire(new WireData);
   }
 
   /** ########## CHAINABLE PUBLIC API METHODS ########## */
   
+  /**
+   * Add a single column by name
+   * @return RockFinder3
+   */
+  public function addColumn($colname) {
+    return $this->addColumns([$colname]);
+  }
+
   /**
    * Add columns to finder
    * @param array $columns
@@ -102,7 +129,7 @@ class RockFinder3 extends WireData implements Module {
       $alias = $v;
 
       // add this column
-      $this->addColumn($column, $type, $alias);
+      $this->_addColumn($column, $type, $alias);
     }
 
     return $this;
@@ -182,6 +209,50 @@ class RockFinder3 extends WireData implements Module {
   }
 
   /**
+   * Join slave finder to master finder
+   * 
+   * @param RockFinder3 $slave
+   * @param array $options
+   * @return RockFinder3
+   */
+  public function join($slave, $options = []) {
+    // check if a column with slave name exists
+    if(!$this->columns->has($slave->name)) {
+      throw new WireException($slave->name . " not found: The name of the finder to be joined must exist as column in the main finder");
+    }
+
+    // setup options
+    $opt = $this->wire(new WireData()); /** @var WireData $opt */
+    $opt->setArray([
+      'columns' => null, // null = join all columns, otherwise define an array
+      'removeID' => false, // dont remove the column used for the join
+    ]);
+    $opt->setArray($options);
+    
+    // create new join finder
+    /** @var RockFinder3 */
+    $join = $this->modules->get('RockFinder3');
+    $join->find($slave->selector);
+    $join->main = $this; // main finder
+    $join->joinColName = $slave->name; // colname for join
+    $join->removeJoinCol = $opt->removeID; // remove join base column?
+    $join->setName("join_{$slave->name}_".uniqid());
+    
+    // add columns
+    if(!$opt->columns) $opt->columns = $slave->columns;
+    foreach($opt->columns as $colname) {
+      $col = $slave->columns->get($colname);
+      $join->addColumnType($col);
+    }
+
+    // apply join to this finder
+    $this->joins->add($join);
+    $this->applyJoin($join);
+
+    return $this;
+  }
+
+  /**
    * Save this finder to the global array of finders
    * The finder can then be joined by other finders etc.
    */
@@ -244,7 +315,7 @@ class RockFinder3 extends WireData implements Module {
    * @param string|array $ids
    * @return array
    */
-  public function getRowsByIds($ids) {
+  public function getRowsById($ids) {
     $rows = [];
     if(is_string($ids)) $ids = explode(",", $ids);
     foreach($ids as $id) $rows[] = $this->getRowById($id);
@@ -265,30 +336,11 @@ class RockFinder3 extends WireData implements Module {
 
     // now execute the query
     $result = $this->query->execute();
-    $this->rows = $result->fetchAll(\PDO::FETCH_OBJ);
-
-    $rows = [];
-    foreach($this->rows as $row) $rows[(int)$row->id] = $row;
-    return $this->rows = $rows;
+    $rows = $result->fetchAll(\PDO::FETCH_OBJ);
+    return $this->rows = $this->master->addRowIds($rows);
   }
   
   /** ########## END GET DATA ########## */
-
-  private function applyRowLimit() {
-    if(!$this->limitRowsTo) return;
-
-    // get ids that point to that relation
-    $ids = [];
-    $finder = $this->limitRowsTo;
-    $column = $this->name; // colname = name of current relation
-    foreach($finder->getRows() as $row) {
-      $ids = array_merge($ids, explode(",", $row->$column));
-    }
-    
-    // now restrict the relation to these ids
-    $ids = implode(",", $ids);
-    $this->query->where("pages.id IN ($ids)");
-  }
 
   /**
    * Add column to finder
@@ -297,7 +349,7 @@ class RockFinder3 extends WireData implements Module {
    * @param mixed $alias
    * @return void
    */
-  private function addColumn($column, $type = null, $alias = null) {
+  private function _addColumn($column, $type = null, $alias = null) {
     if(!$type) $type = $this->getType($column);
     if(!$alias) $alias = $column;
 
@@ -313,11 +365,54 @@ class RockFinder3 extends WireData implements Module {
     // get the column object and apply its changes to the current finder
     $colType = $this->master->columnTypes->get("type=$type");
     if(!$colType) throw new WireException("No column type class for $type");
-    $col = $colType->getNew($colname, $alias);
-    $col->applyTo($this);
 
-    // add column to array of columns
+    $col = $colType->getNew($colname, $alias);
+    $this->addColumnType($col);
+  }
+
+  /**
+   * Add column type to this finder
+   * @param \RockFinder3\Column $col
+   * @return void
+   */
+  public function addColumnType($col) {
+    $col->applyTo($this);
     $this->columns->add($col);
+  }
+
+  /**
+   * Apply join to current finder
+   * @param RockFinder3 $join
+   * @return void
+   */
+  public function applyJoin($join) {
+    $this->query->leftjoin($join->getJoinSQL());
+    foreach($join->columns as $col) {
+      $this->query->select("GROUP_CONCAT(DISTINCT `{$join->name}`.`{$col->alias}`) AS `{$join->joinColName}:{$col->alias}`");
+    }
+    if($join->removeJoinCol) {
+      $select = $this->query->select;
+      foreach($select as $i=>$_select) {
+        if(strpos($_select, " AS `{$join->joinColName}`")) unset($select[$i]);
+      }
+      $this->query->set('select', array_values($select));
+    }
+  }
+
+  private function applyRowLimit() {
+    if(!$this->limitRowsTo) return;
+
+    // get ids that point to that relation
+    $ids = [];
+    $finder = $this->limitRowsTo;
+    $column = $this->name; // colname = name of current relation
+    foreach($finder->getRows() as $row) {
+      $ids = array_merge($ids, explode(",", $row->$column));
+    }
+    
+    // now restrict the relation to these ids
+    $ids = implode(",", $ids);
+    $this->query->where("pages.id IN ($ids)");
   }
 
   /**
@@ -361,6 +456,15 @@ class RockFinder3 extends WireData implements Module {
   }
 
   /**
+   * Dump SQL of current finder to console
+   * @return void
+   */
+  public function dumpSQL() {
+    db($this->getSQL());
+    return $this;
+  }
+
+  /**
    * Get the type of this column
    * 
    * The type is then used for getting the proper data for the column.
@@ -392,8 +496,33 @@ class RockFinder3 extends WireData implements Module {
    */
   public function getSQL($pretty = true) {
     if(!$this->query) return;
+
+    // make sure that the row limit is applied before returning the sql
+    $this->applyRowLimit();
+
+    // return sql
     $sql = $this->query->getQuery();
     return $pretty ? $this->prettify($sql) : $sql;
+  }
+
+  /**
+   * Get sql for join
+   * @return string
+   */
+  public function getJoinSQL($pretty = true) {
+    // the current instance is the slave finder
+    // for better readability give it a good name
+    $slave = $this;
+
+    // get sql subquery
+    // for better readability we add spaces to indent the subquery
+    $subquery = str_replace("\n", "\n  ", $slave->getSQL($pretty));
+
+    // get the column of the main finder where the join is based on
+    $col = $slave->main->columns->get($slave->joinColName);
+
+    // return the sql query to join the subquery as new table alias
+    return "(\n  $subquery\n) AS `{$slave->name}` ON `{$slave->name}`.`id` = `{$col->tableAlias}`.`data`";
   }
 
   /**
@@ -425,6 +554,7 @@ class RockFinder3 extends WireData implements Module {
       'columns' => $this->columns,
       'options' => $this->options,
       'relations' => $this->relations,
+      'joins' => $this->joins,
       'getRows()' => $this->getRows(),
     ];
   }

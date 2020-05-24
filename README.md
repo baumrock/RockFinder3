@@ -2,11 +2,11 @@
 
 Combine the power of ProcessWire selectors and SQL
 
-![img](https://i.imgur.com/g3fBlPa.png)
+![img](https://i.imgur.com/6FbDwQK.png)
 
 # Preface
 
-### Why this module exists
+## Why this module exists
 
 Initially RockFinder1 was built to feed client side datatables with an array of ProcessWire page data. Loading all pages into memory via a `$pages->find()` query can quickly get inefficient. Querying the database directly via SQL can quickly get very complex on the other hand.
 
@@ -19,19 +19,20 @@ Possible use cases:
 * Find data for a CSV or XML export.
 * Find data for a REST-API.
 
-### Differences to previous RockFinder modules
+## Differences to previous RockFinder modules
 
 * RF3 supports chaining: `$RockFinder3->find("template=foo")->addColumns(['foo'])`.
-* RF3 fully supports multi-language.
-* RF3 makes it super-easy to add custom columnTypes.
+* RF3 fully supports [multi-language](#multi-language).
+* RF3 makes it super-easy to [add custom columnTypes](#custom-column-types).
+* RF3 makes it easier to use [custom SQL statements](#custom-sql).
 
-### Getting help / Contribute
+## Getting help / Contribute
 
 * If you need help please head over to the PW forum thread and ask your question there: // TODO
 * If you found an issue/bug please report it on [GitHub](https://github.com/baumrock/RockFinder3/issues).
 * If you can help to improve RockFinder I'm happy to accept [Pull Requests](https://github.com/baumrock/RockFinder3/pulls).
 
-### Example Snippets
+## Example Snippets
 
 TracyDebugger is not necessary for using RockFinder3 but it is recommended. All examples in this readme show dumps of RockFinder instances using Tracy. The ProcessModule of RockFinder3 does use Tracy for dumping the results, so TracyDebugger is required for the ProcessModule to run.
 
@@ -44,6 +45,10 @@ $finder = $modules->get("RockFinder3")->find("template=foo");
 // or the shortcut via the RockFinder3 API variable
 $finder = $RockFinder3->find("template=foo");
 ```
+
+### Special thanks
+
+...to Adrian once more for the brilliant TracyDebugger and the quick help for adding dumping support to the Tracy Console! This was tremendously helpful for developing this module and also for writing these docs.
 
 ![img](hr.svg)
 
@@ -100,13 +105,34 @@ $RockFinder3
 
 ![img](https://i.imgur.com/dfHdrG7.png)
 
+## Dumping the SQL of the finder
+
+To understand what is going on it is important to know the SQL that is executed. You can easily dump the SQL query via the `dumpSQL()` method. This even supports chaining:
+
+```php
+$RockFinder3
+  ->find("template=cat")
+  ->addColumns(['title'])
+  ->dumpSQL()
+  ->addColumns(['owner'])
+  ->dumpSQL()
+  ->dump();
+```
+
+![img](https://i.imgur.com/AfUy2OF.png)
+
 ## Renaming columns (column aliases)
 
 Sometimes you have complicated fieldnames like `my_great_module_field_foo` and you just want to get the values of this field as column `foo` in your result:
 
 ```php
-$RockFinder3->find(...)->addColumns(['my_great_module_field_foo' => 'foo']);
+$RockFinder3
+  ->find("template=person")
+  ->addColumns(['title' => 'Name', 'age' => 'Age in years', 'weight' => 'KG'])
+  ->dump();
 ```
+
+![img](https://i.imgur.com/TIpk3pu.png)
 
 ## Custom column types
 
@@ -219,24 +245,69 @@ This will use these values behind the scenes (here for the `title` field):
 
 ![img](https://i.imgur.com/gQA22HA.png)
 
+![img](hr.svg)
+
+# Joins
+
+What if we had a template `cat` that holds data of the cat, but also references one single owner. And what if we wanted to get a list of all cats including their owners names and age? The owner would be a single page reference field, so the result of this column would be the page id of the owner:
+
+```php
+$RockFinder3
+  ->find("template=cat")
+  ->addColumns(['title', 'owner'])
+  ->dump();
+```
+
+![img](https://i.imgur.com/Y7lgIjb.png)
+
+Joins to the rescue:
+
+```php
+$owners = $RockFinder3
+  ->find("template=person")
+  ->addColumns(['title', 'age'])
+  ->setName('owner'); // set name of target column
+$RockFinder3
+  ->find("template=cat")
+  ->addColumns(['title', 'owner'])
+  ->join($owners)
+  ->dump();
+```
+
+![img](https://i.imgur.com/9JyMKrs.png)
+
+If you don't want to join all columns you can define an array of column names to join. You can also set the `removeID` option to true if you want to remove the column holding the id of the joined data:
+
+```php
+->join($owners, ['columns' => ['title'], 'removeID' => true])
+```
+
+![img](https://i.imgur.com/zf1imb4.png)
+
+Joins work great on single page reference fields. But what if we had multiple pages referenced in one single page reference field?
 
 ![img](hr.svg)
 
-# Page Reference Fields and Relations
+# Relations
 
-We know now how to query simple fields, but what about fields that can store multiple values? The maybe most important field of that kind is a page reference field. See this example where we have a page reference field on template `cat` that lets us choose `kittens` for this cat:
+Let's take a simple example where we have a page reference field on template `cat` that lets us choose `kittens` for this cat:
 
 ![img](https://i.imgur.com/QoKCU7i.png)
 
 This is what happens if we query the field in our finder:
 
+```php
+$RockFinder3
+  ->find("template=cat")
+  ->addColumns(['title', 'kittens'])
+  ->dump();
+```
+
 ![img](https://i.imgur.com/JcdULfz.png)
 
-So, how do we get data of those referenced pages? We might want to list the name of the kitten (the `title` field). This could be done in a similar way as we did on the options field above. But what if we also wanted to show other field data of that kitten?
+So, how do we get data of those referenced pages? We might want to list the name of the kitten (the `title` field). This could be done in a similar way as we did on the options field above. But what if we also wanted to show other field data of that kitten, like the sex and age? It would get really difficult to show all that informations in one single cell of output!
 
-![img](https://i.imgur.com/tXddItx.png)
-
-It would get really difficult to show all that informations in one single cell of output! **Relations** to the rescue:
+Relations to the rescue:
 
 ```php
 // setup kittens finder that can later be added as relation
@@ -259,74 +330,119 @@ db($finder->relations->first());
 
 ![img](https://i.imgur.com/IFkxrmW.png)
 
+**NOTE**
+
+Look at the result of the `kittens` finder: It returned three rows as result even though we did not define any limit on the initial setup of that finder! That is because RockFinder will automatically return only the rows of the relation that are listed in the column of the main finder!
+
+You can see what happens in the SQL query:
+
+```php
+db($finder->relations->first()->getSQL());
+```
+
+```sql
+SELECT
+  `pages`.`id` AS `id`,
+  `_field_title_5eca947b3da27`.`data` AS `title` 
+FROM `pages` 
+LEFT JOIN `field_title` AS `_field_title_5eca947b3da27`
+  ON `_field_title_5eca947b3da27`.`pages_id` = `pages`.`id` 
+WHERE (pages.templates_id=51) 
+AND (pages.status<1024) 
+AND pages.id IN (258138,258171,258137) /* here is the limit */
+GROUP BY pages.id
+```
+
 If you need to access those kittens `258138,258171,258137` via PHP you can do this:
 
 ```php
 $relation = $finder->relations->first();
-db($relation->getRowsByIds("258138,258171,258137"));
+db($relation->getRowsById("258138,258171,258137"));
 db($relation->getRowById(258138));
 ```
 
 ![img](https://i.imgur.com/71UHptF.png)
 
-![img](hr.svg)
-
-# Joins
-
-# Aggregations
-
-# getSQL()
-
-# Adding custom SQL
-
-```php
-$finder->query->where("pages.id IN (1,2,3)");
-```
-
+There's a lot you can do already simply using the RockFinder API, but I promised something about using SQL...
 
 ![img](hr.svg)
 
-# Differences to RockFinder 1 and 2
+# Custom SQL
 
-## RockFinder1
+## Option 1: DatabaseQuerySelect
 
-* Had a custom implementation for querying the DB.
-
-## RockFinder2
-
-* Already worked based on the internal DB query selector engine.
-
-
-RockFinder2 has an API to be queried via www.example.com/your-secred-rockfinder-url
-
-This should really not be part of the rockfinder module! If there is a need for such a feature we can put it in a separate module or use RockFinder2 instead.
-
-## RockFinder3 supports chaining
+RockFinder3 is heavily based on the `DatabaseQuerySelect` class of ProcessWire. This is an awesome class for building all kinds of SQL `SELECT` statements - from simple to very complex ones. You can access this query object at any time via the `query` property of the finder:
 
 ```php
-db($RockFinder3->find("template=foo")->addColumns(['foo', 'bar'])->getData());
+$owners = $RockFinder3
+  ->find("template=person")
+  ->addColumns(['title', 'age', 'weight']);
+db($owners->query);
 ```
 
+![img](https://i.imgur.com/1xCve1R.png)
 
-
-
-
-
-
-The usage is very similar to a regular `$pages->find()` query, but the returned result is very different:
-
-* The result is not a PageArray but an instance of RockFinder3
-* The data array is a regular PHP array of plain PHP objects (not PW Pages)
-* By default a find() operation does only return IDs of the found pages
-
-**Note:** By default the `find()` will sort the result according to the internal PW `$pages->find()` call. On large datasets of thousands of pages this sorting can make the query slow, which is bad if the sort order does not matter (eg because the result is sorted on the client side, like in a JS-datagrid).
+This means you have full control over your executed SQL command:
 
 ```php
-$finder->find("template=admin, limit=3", ['nosort'=>true]);
+$finder = $RockFinder3->find(...)->addColumns(...);
+$finder->query->select("foo AS foo");
+$finder->query->select("bar AS bar");
+$finder->query->where("this = that");
 ```
+
+The only thing you need to take care of is to query the correct tables and columns. This might seem a little hard because many times the names are made unique by a temporary suffix. It's very easy to access these values though:
+
+```php
+$owners = $RockFinder3
+  ->find("template=person")
+  ->setName('owner')
+  ->addColumns(['title', 'age']);
+db($owners->columns->get('age'));
+```
+
+![img](https://i.imgur.com/iRnrfPJ.png)
+
+## Option 2: SQL String Modification
+
+Another technique is to get the resulting SQL and wrap it around a custom SQL query:
+
+```php
+$owners = $RockFinder3
+  ->find("template=person")
+  ->addColumns(['title', 'age', 'weight'])
+  ->setName('owner');
+$cats = $RockFinder3
+  ->find("template=cat")
+  ->addColumns(['title', 'owner'])
+  ->join($owners)
+  ->getSQL();
+
+db($RockFinder3->getObject("SELECT AVG(`owner:age`) FROM ($cats) AS tmp"));
+```
+
+![img](https://i.imgur.com/NwqatSv.png)
+
+You SQL skills are the limit ;)
+
+```php
+db($RockFinder3->getObject("
+  SELECT
+  AVG(`owner:age`) AS `age`,
+  `owner:weight` as `weight`
+  FROM ($cats) AS tmp
+  WHERE `owner:age`>50
+"));
+```
+
+![img](https://i.imgur.com/05rQ7oQ.png)
+
+You see that you can build very complex queries with very little and easy SQL!
+
+![img](hr.svg)
 
 # Thank you
 
 ...for reading the docs and using RockFinder3. If you find RockFinder3 helpful consider giving it a star on github or [saying thank you](https://www.paypal.me/baumrock). I'm also always happy to get feedback in the PW forum!
 
-Happy finding!
+**Happy finding!**
