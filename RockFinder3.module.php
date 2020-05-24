@@ -104,33 +104,28 @@ class RockFinder3 extends WireData implements Module {
     if(!is_array($columns)) throw new WireException("Parameter must be an array");
 
     // add columns one by one
-    foreach($columns as $k=>$v) {
+    foreach($columns as $name=>$value) {
       // skip null value columns
-      if($v === null) continue;
+      if($value === null) continue;
 
       // if key is integer we take the value instead
-      if(is_int($k)) {
-        $k = $v;
-        $v = null;
+      if(is_int($name)) {
+        $name = $value;
+        $alias = null;
       }
-
-      // setup initial column name
-      $column = $k;
+      else $alias = $value;
 
       // if a type is set, get type
       // syntax is type:column, eg addColumns(['mytype:myColumn'])
       $type = null;
-      if(strpos($column, ":")) {
-        $arr = explode(":", $column);
+      if(strpos($name, ":")) {
+        $arr = explode(":", $name);
         $type = $arr[0];
-        $column = $arr[1];
+        $name = $arr[1];
       }
 
-      // column name alias
-      $alias = $v;
-
       // add this column
-      $this->_addColumn($column, $type, $alias);
+      $this->_addColumn($name, $type, $alias);
     }
 
     return $this;
