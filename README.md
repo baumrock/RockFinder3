@@ -1,6 +1,6 @@
 ![img](logo.svg)
 
-Combine the power of ProcessWire selectors and SQL
+## Combine the power of ProcessWire selectors and SQL
 
 ![img](https://i.imgur.com/6FbDwQK.png)
 
