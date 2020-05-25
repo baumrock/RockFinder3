@@ -263,6 +263,46 @@ This will use these values behind the scenes (here for the `title` field):
 
 ![img](hr.svg)
 
+# Callbacks
+
+RockFinder3 supports row callbacks that are executed on each row of the result. Usage is simple:
+
+```php
+$RockFinder3
+  ->find("template=cat")
+  ->addColumns(['title', 'weight'])
+  ->each(function($row) { $row->myTitle = "{$row->title} ({$row->weight} kg)"; })
+  ->dump();
+```
+
+![img](https://i.imgur.com/qwkOTjG.png)
+
+These callbacks can be a great option, **but keep in mind that they can also be very resource intensive**! That applies even more when you request page objects from within your callback (meaning there will be no benefit at all in using RockFinder compared to a regular `$pages->find()` call).
+
+## addPath()
+
+A special implementation of the `each()` method is the `addPath()` method that will add a path column to your result showing the path of every page. This will **not** load all pages into memory though, because it uses the `$pages->getPath()` method internally.
+
+```php
+$RockFinder3
+  ->find("template=cat")
+  ->addColumns(['title', 'weight'])
+  ->addPath("de")
+  ->dump();
+```
+
+![img](https://i.imgur.com/lg2zcWI.png)
+
+If you *really* need to access page objects you can get them via the `$finder` parameter of the callback:
+
+```php
+$finder->each(function($row, $finder) {
+  $row->foo = $finder->pages->get($row->id)->foo;
+}
+```
+
+![img](hr.svg)
+
 # Joins
 
 What if we had a template `cat` that holds data of the cat, but also references one single owner. And what if we wanted to get a list of all cats including their owners names and age? The owner would be a single page reference field, so the result of this column would be the page id of the owner:

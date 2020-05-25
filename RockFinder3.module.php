@@ -45,6 +45,9 @@ class RockFinder3 extends WireData implements Module {
 
   public $selector;
 
+  /** @var WireArray */
+  public $callbacks;
+
   /**
    * Reference to the main finder (used by joined finders)
    * @var RockFinder3
@@ -81,6 +84,7 @@ class RockFinder3 extends WireData implements Module {
     $this->columns = $this->wire(new WireArray);
     $this->relations = $this->wire(new WireArray());
     $this->joins = $this->wire(new WireArray());
+    $this->callbacks = $this->wire(new WireArray());
     $this->options = $this->wire(new WireData);
   }
 
@@ -158,6 +162,20 @@ class RockFinder3 extends WireData implements Module {
   }
 
   /**
+   * Add path to each row
+   * @param mixed $lang
+   * @return RockFinder3
+   */
+public function addPath($lang = null) {
+  // get language via id or name, eg ->addPath("de")
+  $lang = $this->languages((string)$lang)->id;
+  $this->each(function($row, $finder) use($lang) {
+    $row->path = $finder->pages->getPath($row->id, $lang);
+  });
+  return $this;
+}
+
+  /**
    * Add relation to this finder
    *
    * @param RockFinder3 $relation
@@ -170,6 +188,19 @@ class RockFinder3 extends WireData implements Module {
       throw new WireException($relation->name . " not found: The name of your relation must exist as column in the main finder");
     }
     $this->relations->add($relation);
+    return $this;
+  }
+
+  /**
+   * Apply callback to every row of result
+   * @param callable $callback
+   * @return RockFinder3
+   */
+  public function each($callback) {
+    $_callback = $this->wire(new WireData()); /** @var WireData $_callback */
+    $_callback->applied = false;
+    $_callback->callback = $callback;
+    $this->callbacks->add($_callback);
     return $this;
   }
 
@@ -333,7 +364,9 @@ class RockFinder3 extends WireData implements Module {
     // now execute the query
     $result = $this->query->execute();
     $rows = $result->fetchAll(\PDO::FETCH_OBJ);
-    return $this->rows = $this->master->addRowIds($rows);
+    $rows = $this->master->addRowIds($rows);
+    $rows = $this->applyCallbacks($rows);
+    return $this->rows = $rows;
   }
 
   /** ########## END GET DATA ########## */
@@ -522,6 +555,20 @@ class RockFinder3 extends WireData implements Module {
   }
 
   /**
+   * Apply callbacks to each row
+   * @param array $rows
+   * @return array
+   */
+  private function applyCallbacks($rows) {
+    // do only apply callback once!
+    foreach($this->callbacks->find("applied=0") as $cb) {
+      foreach($rows as $row) $cb->callback->__invoke($row, $this);
+      $cb->applied = true;
+    }
+    return $rows;
+  }
+
+  /**
    * Apply join to current finder
    * @param RockFinder3 $join
    * @return void
@@ -646,6 +693,7 @@ class RockFinder3 extends WireData implements Module {
       'columns' => $this->columns,
       'options' => $this->options,
       'relations' => $this->relations,
+      'callbacks' => $this->callbacks,
       'joins' => $this->joins,
       'getRows()' => $this->getRows(),
     ];
