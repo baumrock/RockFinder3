@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.3',
+      'version' => '1.0.4',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -440,8 +440,8 @@ public function addPath($lang = null) {
     $opt->setArray($options);
 
     // dump object?
-    if($opt->dump) db($this);
-    if($opt->barDump) bdb($this);
+    if($opt->dump) \TD::dumpBig($this);
+    if($opt->barDump) \TD::barDumpBig($this);
 
     // setup tabulator config object
     $config = $this->wire(new WireData()); /** @var WireData $config */
@@ -501,7 +501,7 @@ public function addPath($lang = null) {
    * @return RockFinder3
    */
   public function dumpSQL() {
-    db($this->getSQL());
+    \TD::dumpBig($this->getSQL());
     return $this;
   }
 
@@ -510,7 +510,7 @@ public function addPath($lang = null) {
    * @return RockFinder3
    */
   public function barDumpSQL() {
-    bdb($this->getSQL());
+    \TD::barDumpBig($this->getSQL());
     return $this;
   }
 
