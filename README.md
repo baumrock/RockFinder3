@@ -297,7 +297,7 @@ $RockFinder3
 
 If you need the path for linking/redirecting from your data to the pages it might be better to build a custom redirect page that works with the page id, so you don't need the overhead of getting all page paths:
 
-```php
+```html
 <a href='/your/redirect/url/?id=123'>Open Page 123</a>
 ```
 
