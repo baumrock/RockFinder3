@@ -295,6 +295,12 @@ $RockFinder3
 
 ![img](https://i.imgur.com/lg2zcWI.png)
 
+If you need the path for linking/redirecting from your data to the pages it might be better to build a custom redirect page that works with the page id, so you don't need the overhead of getting all page paths:
+
+```php
+<a href='/your/redirect/url/?id=123'>Open Page 123</a>
+```
+
 If you *really* need to access page objects you can get them via the `$finder` parameter of the callback:
 
 ```php
