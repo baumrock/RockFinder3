@@ -12,11 +12,12 @@ abstract class Column extends \ProcessWire\Wire {
     // $master->columnTypes->get("type=foo")->getNew();
     $this->type = $this->className;
   }
-  
+
   /**
    * Abstract function that every columnType must implement
+   * @param \ProcessWire\RockFinder3
    */
-  abstract public function applyTo(\ProcessWire\RockFinder3 $finder);
+  abstract public function applyTo($finder);
 
   /**
    * Set the table name for this column
@@ -63,7 +64,7 @@ abstract class Column extends \ProcessWire\Wire {
 
   /**
    * Set the data-column that should be selected via SQL
-   * 
+   *
    * This is usually `table`.`data` but for multilang it is `table`.`data123`
    * If the multilang column is empty it should return the default's lang value
    * so it gets even more complicated. This method handles all that and can
