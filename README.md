@@ -267,6 +267,8 @@ This will use these values behind the scenes (here for the `title` field):
 
 RockFinder3 supports row callbacks that are executed on each row of the result. Usage is simple:
 
+## each()
+
 ```php
 $RockFinder3
   ->find("template=cat")
