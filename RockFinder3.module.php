@@ -338,82 +338,12 @@ class RockFinder3 extends WireData implements Module {
 
   /** ########## END GET DATA ########## */
 
-  /**
-   * Add column to finder
-   * @param mixed $column
-   * @param mixed $type
-   * @param mixed $alias
-   * @return void
-   */
-  private function _addColumn($column, $type = null, $alias = null) {
-    if(!$type) $type = $this->getType($column);
-    if(!$alias) $alias = $column;
-
-    // add this column to columns array
-    $colname = (string)$column;
-    if($this->columns->has($colname)) {
-      // if the column does already exist we append a unique id
-      // this can happen when requesting title and value of an options field
-      // https://i.imgur.com/woxCx78.png
-      $colname .= "_".uniqid();
-    }
-
-    // get the column object and apply its changes to the current finder
-    $colType = $this->master->columnTypes->get("type=$type");
-    if(!$colType) throw new WireException("No column type class for $type");
-
-    $col = $colType->getNew($colname, $alias);
-    $this->addColumnType($col);
-  }
-
-  /**
-   * Add column type to this finder
-   * @param \RockFinder3\Column $col
-   * @return void
-   */
-  public function addColumnType($col) {
-    $col->applyTo($this);
-    $this->columns->add($col);
-  }
-
-  /**
-   * Apply join to current finder
-   * @param RockFinder3 $join
-   * @return void
-   */
-  public function applyJoin($join) {
-    $this->query->leftjoin($join->getJoinSQL());
-    foreach($join->columns as $col) {
-      $this->query->select("GROUP_CONCAT(DISTINCT `{$join->name}`.`{$col->alias}`) AS `{$join->joinColName}:{$col->alias}`");
-    }
-    if($join->removeJoinCol) {
-      $select = $this->query->select;
-      foreach($select as $i=>$_select) {
-        if(strpos($_select, " AS `{$join->joinColName}`")) unset($select[$i]);
-      }
-      $this->query->set('select', array_values($select));
-    }
-  }
-
-  private function applyRowLimit() {
-    if(!$this->limitRowsTo) return;
-
-    // get ids that point to that relation
-    $ids = [];
-    $finder = $this->limitRowsTo;
-    $column = $this->name; // colname = name of current relation
-    foreach($finder->getRows() as $row) {
-      $ids = array_merge($ids, explode(",", $row->$column));
-    }
-
-    // now restrict the relation to these ids
-    $ids = implode(",", $ids);
-    $this->query->where("pages.id IN ($ids)");
-  }
+  /** ########## TRACY DEBUGGER ########## */
 
   public function barDump($title = null, $options = null) {
     \TD::barEcho($this->dump($title, $options, true));
   }
+
 
   /**
    * Dump this finder to the tracy console
@@ -487,6 +417,81 @@ class RockFinder3 extends WireData implements Module {
   public function dumpSQL() {
     db($this->getSQL());
     return $this;
+  }
+
+  /** ########## END TRACY DEBUGGER ########## */
+
+  /**
+   * Add column to finder
+   * @param mixed $column
+   * @param mixed $type
+   * @param mixed $alias
+   * @return void
+   */
+  private function _addColumn($column, $type = null, $alias = null) {
+    if(!$type) $type = $this->getType($column);
+    if(!$alias) $alias = $column;
+
+    // add this column to columns array
+    $colname = (string)$column;
+    if($this->columns->has($colname)) {
+      // if the column does already exist we append a unique id
+      // this can happen when requesting title and value of an options field
+      // https://i.imgur.com/woxCx78.png
+      $colname .= "_".uniqid();
+    }
+
+    // get the column object and apply its changes to the current finder
+    $colType = $this->master->columnTypes->get("type=$type");
+    if(!$colType) throw new WireException("No column type class for $type");
+
+    $col = $colType->getNew($colname, $alias);
+    $this->addColumnType($col);
+  }
+
+  /**
+   * Add column type to this finder
+   * @param \RockFinder3\Column $col
+   * @return void
+   */
+  public function addColumnType($col) {
+    $col->applyTo($this);
+    $this->columns->add($col);
+  }
+
+  /**
+   * Apply join to current finder
+   * @param RockFinder3 $join
+   * @return void
+   */
+  public function applyJoin($join) {
+    $this->query->leftjoin($join->getJoinSQL());
+    foreach($join->columns as $col) {
+      $this->query->select("GROUP_CONCAT(DISTINCT `{$join->name}`.`{$col->alias}`) AS `{$join->joinColName}:{$col->alias}`");
+    }
+    if($join->removeJoinCol) {
+      $select = $this->query->select;
+      foreach($select as $i=>$_select) {
+        if(strpos($_select, " AS `{$join->joinColName}`")) unset($select[$i]);
+      }
+      $this->query->set('select', array_values($select));
+    }
+  }
+
+  private function applyRowLimit() {
+    if(!$this->limitRowsTo) return;
+
+    // get ids that point to that relation
+    $ids = [];
+    $finder = $this->limitRowsTo;
+    $column = $this->name; // colname = name of current relation
+    foreach($finder->getRows() as $row) {
+      $ids = array_merge($ids, explode(",", $row->$column));
+    }
+
+    // now restrict the relation to these ids
+    $ids = implode(",", $ids);
+    $this->query->where("pages.id IN ($ids)");
   }
 
   /**
