@@ -411,6 +411,10 @@ class RockFinder3 extends WireData implements Module {
     $this->query->where("pages.id IN ($ids)");
   }
 
+  public function barDump($title = null, $options = null) {
+    \TD::barEcho($this->dump($title, $options, true));
+  }
+
   /**
    * Dump this finder to the tracy console
    *
@@ -418,7 +422,7 @@ class RockFinder3 extends WireData implements Module {
    *
    * @return void
    */
-  public function dump($title = null, $options = null) {
+  public function dump($title = null, $options = null, $bardump = false) {
     $settings = $this->wire(new WireData()); /** @var WireData $settings */
     $settings->setArray([
       'layout' => 'fitColumns',
@@ -432,24 +436,48 @@ class RockFinder3 extends WireData implements Module {
     $settings['data'] = $this->getRowArray();
     $json = json_encode($settings);
     $id = uniqid();
+    $out = '';
 
-    if($title === true) db($this);
-    elseif($title) echo "<h2>$title</h2>";
-    echo "<div id='tab_$id'>loading...</div>
+    if($title === true) {
+      if($bardump) {
+        bdb($this);
+      }
+      else {
+        db($this);
+      }
+    }
+    elseif($title) $out.= "<h2>$title</h2>";
+    $out .= "<div id='tab_$id'>loading...</div>
     <script>
     if(typeof Tabulator == 'undefined') {
       var link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = 'https://unpkg.com/tabulator-tables@4.6.3/dist/css/tabulator.min.css';
       document.getElementsByTagName('head')[0].appendChild(link);
-      tracyJSLoader.load('https://unpkg.com/tabulator-tables@4.6.3/dist/js/tabulator.min.js', function() {
+
+      tabulatorLoader = function(src, callback) {
+        var script = document.createElement('script'),
+        loaded;
+        script.setAttribute('src', src);
+        if(callback) {
+          script.onreadystatechange = script.onload = function() {
+            if(!loaded) {
+              callback();
+            }
+            loaded = true;
+          };
+        }
+        document.getElementsByTagName('head')[0].appendChild(script);
+      };
+
+      tabulatorLoader('https://unpkg.com/tabulator-tables@4.6.3/dist/js/tabulator.min.js', function() {
         new Tabulator('#tab_$id', $json);
       });
     }
     else new Tabulator('#tab_$id', $json);
     </script>";
 
-    return $this;
+    return $out;
   }
 
   /**
