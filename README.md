@@ -71,7 +71,9 @@ $RockFinder3->find("template=foo");
 $modules->get('RockFinder3')->find("template=foo");
 ```
 
-## Adding columns
+![img](hr.svg)
+
+# Adding columns
 
 You'll most likely don't need only ids, so there is the `addColumns()` method for adding additional columns:
 
@@ -85,22 +87,39 @@ $RockFinder3
 
 This makes it possible to easily add any field data of the requested page.
 
-## Dumping data
+![img](hr.svg)
 
-For small finders Tracy's `dump()` feature is enough, but if you have more complex finders or you have thousands of pages this might get really inconvenient. That's why RockFinder3 ships with a custom `dump()` method that works in the tracy console and turns the result of the finder into a paginated table (using tabulator.info):
+# Dumping data
+
+For small finders Tracy's `dump()` feature is enough, but if you have more complex finders or you have thousands of pages this might get really inconvenient. That's why RockFinder3 ships with a custom `dump()` method that works in the tracy console and turns the result of the finder into a paginated table (using tabulator.info).
+
+For all the dumping methods you can provide two parameters:
+
+1. The title of the dump*
+1. The settings for the rendered tabulator table
+
+*Note that if you set the title to TRUE the method will not only dump the tabulator but also the current RockFinder3 object (see the next example).
+
+## dump() or d()
 
 ```php
 $RockFinder3
-  ->find("id>0")
+  ->find("template=cat")
   ->addColumns(['title', 'created'])
-  ->dump();
+  ->dump(true);
 ```
 
-![img](https://i.imgur.com/dfHdrG7.png)
+![img](https://i.imgur.com/MbIA7fZ.png)
+
+## barDump() or bd()
+
+For situations where you are not working in the console but maybe in a template file or a module the `barDump()` method might be useful.
+
+![img](https://i.imgur.com/LHhqJk5.png)
 
 ## Dumping the SQL of the finder
 
-To understand what is going on it is important to know the SQL that is executed. You can easily dump the SQL query via the `dumpSQL()` method. This even supports chaining:
+To understand what is going on it is important to know the SQL that is executed. You can easily dump the SQL query via the `dumpSQL()` or `barDumpSQL()` methods. This even supports chaining:
 
 ```php
 $RockFinder3
@@ -114,7 +133,9 @@ $RockFinder3
 
 ![img](https://i.imgur.com/AfUy2OF.png)
 
-## Renaming columns (column aliases)
+![img](hr.svg)
+
+# Renaming columns (column aliases)
 
 Sometimes you have complicated fieldnames like `my_great_module_field_foo` and you just want to get the values of this field as column `foo` in your result:
 
@@ -127,7 +148,9 @@ $RockFinder3
 
 ![img](https://i.imgur.com/TIpk3pu.png)
 
-## Custom column types
+![img](hr.svg)
+
+# Custom column types
 
 You can add custom column types easily. Just place them in a folder and tell RockFinder to scan this directory for columnTypes:
 

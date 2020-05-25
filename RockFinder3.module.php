@@ -340,43 +340,96 @@ class RockFinder3 extends WireData implements Module {
 
   /** ########## TRACY DEBUGGER ########## */
 
-  public function barDump($title = null, $options = null) {
-    \TD::barEcho($this->dump($title, $options, true));
+  /**
+   * dump to console
+   * @param string|bool $title
+   * @param array $config
+   * @return RockFinder3
+   */
+  public function dump($title = null, $config = null) {
+    echo $this->_dump([
+      'title' => $title === true ? null : $title,
+      'dump' => $title === true,
+      'config' => $config,
+    ]);
+    return $this;
   }
 
+  /**
+   * dump to console
+   * @param string|bool $title
+   * @param array $config
+   * @return RockFinder3
+   */
+  public function d($title = null, $config = null) {
+    return $this->dump($title, $config);
+  }
 
   /**
-   * Dump this finder to the tracy console
-   *
-   * Set title to TRUE to dump the finder object.
-   *
-   * @return void
+   * dump to tracy bar
+   * @param string|bool $title
+   * @param array $config
+   * @return RockFinder3
    */
-  public function dump($title = null, $options = null, $bardump = false) {
-    $settings = $this->wire(new WireData()); /** @var WireData $settings */
-    $settings->setArray([
+  public function barDump($title = null, $config = null) {
+    \TD::barEcho($this->_dump([
+      'title' => $title === true ? null : $title,
+      'barDump' => $title === true,
+      'config' => $config,
+    ]));
+    return $this;
+  }
+
+  /**
+   * dump to tracy bar
+   * @param string|bool $title
+   * @param array $config
+   * @return RockFinder3
+   */
+  public function bd($title = null, $config = null) {
+    return $this->barDump($title, $config);
+  }
+
+  /**
+   * Get the markup for the dump() or barDump()
+   * @param array $options
+   * @return string
+   */
+  private function _dump($options = []) {
+    // set the options object for this method
+    $opt = $this->wire(new WireData()); /** @var WireData $opt */
+    $opt->setArray([
+      'title' => null,
+      'dump' => false,
+      'barDump' => false,
+      'config' => null,
+    ]);
+    $opt->setArray($options);
+
+    // dump object?
+    if($opt->dump) db($this);
+    if($opt->barDump) bdb($this);
+
+    // setup tabulator config object
+    $config = $this->wire(new WireData()); /** @var WireData $config */
+    $config->setArray([
       'layout' => 'fitColumns',
       'autoColumns' => true,
       'pagination' => "local",
       'paginationSize' => 10,
       'paginationSizeSelector' => true,
     ]);
-    $settings->setArray($options ?: []);
-    $settings = $settings->getArray();
-    $settings['data'] = $this->getRowArray();
-    $json = json_encode($settings);
+    $config->setArray($options ?: []);
+    $config = $config->getArray();
+    $config['data'] = $this->getRowArray();
+    $json = json_encode($config);
+
+    // prepare output
     $id = uniqid();
     $out = '';
 
-    if($title === true) {
-      if($bardump) {
-        bdb($this);
-      }
-      else {
-        db($this);
-      }
-    }
-    elseif($title) $out.= "<h2>$title</h2>";
+    // build output string
+    if($opt->title) $out.= "<h2>$opt->title</h2>";
     $out .= "<div id='tab_$id'>loading...</div>
     <script>
     if(typeof Tabulator == 'undefined') {
@@ -411,11 +464,20 @@ class RockFinder3 extends WireData implements Module {
   }
 
   /**
-   * Dump SQL of current finder to console
-   * @return void
+   * Dump SQL of current finder to console (supports chaining)
+   * @return RockFinder3
    */
   public function dumpSQL() {
     db($this->getSQL());
+    return $this;
+  }
+
+  /**
+   * Dump SQL of current finder to tracy bar (supports chaining)
+   * @return RockFinder3
+   */
+  public function barDumpSQL() {
+    bdb($this->getSQL());
     return $this;
   }
 
