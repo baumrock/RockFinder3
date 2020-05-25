@@ -76,7 +76,7 @@ abstract class Column extends \ProcessWire\Wire {
     $this->select = "`{$this->tableAlias}`.`data`";
 
     // early exit if user has default language
-    if($lang->isDefault) return;
+    if(!$lang OR $lang->isDefault) return;
 
     // early exit if it is not a regular field (column of pages table)
     $field = $this->fields->get($this->name);
