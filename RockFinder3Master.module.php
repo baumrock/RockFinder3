@@ -22,7 +22,7 @@ class RockFinder3Master extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3Master',
-      'version' => '1.0.1',
+      'version' => '1.0.2',
       'summary' => 'Master Instance of RockFinder3 that is attached as PW API Variable',
       'autoload' => 9000,
       'singular' => true,
@@ -35,7 +35,7 @@ class RockFinder3Master extends WireData implements Module {
   }
 
   public function init() {
-    $this->wire('RockFinder3', $this);
+    $this->wire('rockfinder3', $this);
     $this->finders = $this->wire(new WireArray());
     $this->columnTypes = $this->wire(new WireArray());
     $this->getBaseColumns();
@@ -92,7 +92,7 @@ class RockFinder3Master extends WireData implements Module {
    * Return a new RockFinder3
    *
    * This makes it easy to get new finders via the API variable:
-   * $finder = $RockFinder3->find("template=foo")->addColumns(...);
+   * $finder = $rockfinder3->find("template=foo")->addColumns(...);
    *
    * @return RockFinder3
    */
