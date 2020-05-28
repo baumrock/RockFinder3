@@ -270,7 +270,7 @@ RockFinder3 supports row callbacks that are executed on each row of the result. 
 ## each()
 
 ```php
-$RockFinder3
+$rockfinder3
   ->find("template=cat")
   ->addColumns(['title', 'weight'])
   ->each(function($row) { $row->myTitle = "{$row->title} ({$row->weight} kg)"; })
@@ -286,7 +286,7 @@ These callbacks can be a great option, **but keep in mind that they can also be 
 A special implementation of the `each()` method is the `addPath()` method that will add a path column to your result showing the path of every page. This will **not** load all pages into memory though, because it uses the `$pages->getPath()` method internally.
 
 ```php
-$RockFinder3
+$rockfinder3
   ->find("template=cat")
   ->addColumns(['title', 'weight'])
   ->addPath("de")
