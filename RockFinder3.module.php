@@ -575,13 +575,14 @@ public function addPath($lang = null) {
    */
   public function applyJoin($join) {
     $this->query->leftjoin($join->getJoinSQL());
+    $colAlias = $this->columns->get($join->joinColName)->alias;
     foreach($join->columns as $col) {
-      $this->query->select("GROUP_CONCAT(DISTINCT `{$join->name}`.`{$col->alias}`) AS `{$join->joinColName}:{$col->alias}`");
+      $this->query->select("GROUP_CONCAT(DISTINCT `{$join->name}`.`{$col->alias}`) AS `{$colAlias}:{$col->alias}`");
     }
     if($join->removeJoinCol) {
       $select = $this->query->select;
       foreach($select as $i=>$_select) {
-        if(strpos($_select, " AS `{$join->joinColName}`")) unset($select[$i]);
+        if(strpos($_select, " AS `{$colAlias}`")) unset($select[$i]);
       }
       $this->query->set('select', array_values($select));
     }
