@@ -45,6 +45,9 @@ class RockFinder3 extends WireData implements Module {
 
   public $selector;
 
+  /** @var WireArray */
+  public $callbacks;
+
   /**
    * Reference to the main finder (used by joined finders)
    * @var RockFinder3
@@ -63,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.1',
+      'version' => '1.0.4',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -81,6 +84,7 @@ class RockFinder3 extends WireData implements Module {
     $this->columns = $this->wire(new WireArray);
     $this->relations = $this->wire(new WireArray());
     $this->joins = $this->wire(new WireArray());
+    $this->callbacks = $this->wire(new WireArray());
     $this->options = $this->wire(new WireData);
   }
 
@@ -158,6 +162,20 @@ class RockFinder3 extends WireData implements Module {
   }
 
   /**
+   * Add path to each row
+   * @param mixed $lang
+   * @return RockFinder3
+   */
+public function addPath($lang = null) {
+  // get language via id or name, eg ->addPath("de")
+  $lang = $this->languages((string)$lang)->id;
+  $this->each(function($row, $finder) use($lang) {
+    $row->path = $finder->pages->getPath($row->id, $lang);
+  });
+  return $this;
+}
+
+  /**
    * Add relation to this finder
    *
    * @param RockFinder3 $relation
@@ -170,6 +188,19 @@ class RockFinder3 extends WireData implements Module {
       throw new WireException($relation->name . " not found: The name of your relation must exist as column in the main finder");
     }
     $this->relations->add($relation);
+    return $this;
+  }
+
+  /**
+   * Apply callback to every row of result
+   * @param callable $callback
+   * @return RockFinder3
+   */
+  public function each($callback) {
+    $_callback = $this->wire(new WireData()); /** @var WireData $_callback */
+    $_callback->applied = false;
+    $_callback->callback = $callback;
+    $this->callbacks->add($_callback);
     return $this;
   }
 
@@ -333,10 +364,157 @@ class RockFinder3 extends WireData implements Module {
     // now execute the query
     $result = $this->query->execute();
     $rows = $result->fetchAll(\PDO::FETCH_OBJ);
-    return $this->rows = $this->master->addRowIds($rows);
+    $rows = $this->master->addRowIds($rows);
+    $rows = $this->applyCallbacks($rows);
+    return $this->rows = $rows;
   }
 
   /** ########## END GET DATA ########## */
+
+  /** ########## TRACY DEBUGGER ########## */
+
+  /**
+   * dump to console
+   * @param string|bool $title
+   * @param array $config
+   * @return RockFinder3
+   */
+  public function dump($title = null, $config = null) {
+    echo $this->_dump([
+      'title' => $title === true ? null : $title,
+      'dump' => $title === true,
+      'config' => $config,
+    ]);
+    return $this;
+  }
+
+  /**
+   * dump to console
+   * @param string|bool $title
+   * @param array $config
+   * @return RockFinder3
+   */
+  public function d($title = null, $config = null) {
+    return $this->dump($title, $config);
+  }
+
+  /**
+   * dump to tracy bar
+   * @param string|bool $title
+   * @param array $config
+   * @return RockFinder3
+   */
+  public function barDump($title = null, $config = null) {
+    \TD::barEcho($this->_dump([
+      'title' => $title === true ? null : $title,
+      'barDump' => $title === true,
+      'config' => $config,
+    ]));
+    return $this;
+  }
+
+  /**
+   * dump to tracy bar
+   * @param string|bool $title
+   * @param array $config
+   * @return RockFinder3
+   */
+  public function bd($title = null, $config = null) {
+    return $this->barDump($title, $config);
+  }
+
+  /**
+   * Get the markup for the dump() or barDump()
+   * @param array $options
+   * @return string
+   */
+  private function _dump($options = []) {
+    // set the options object for this method
+    $opt = $this->wire(new WireData()); /** @var WireData $opt */
+    $opt->setArray([
+      'title' => null,
+      'dump' => false,
+      'barDump' => false,
+      'config' => null,
+    ]);
+    $opt->setArray($options);
+
+    // dump object?
+    if($opt->dump) \TD::dumpBig($this);
+    if($opt->barDump) \TD::barDumpBig($this);
+
+    // setup tabulator config object
+    $config = $this->wire(new WireData()); /** @var WireData $config */
+    $config->setArray([
+      'layout' => 'fitColumns',
+      'autoColumns' => true,
+      'pagination' => "local",
+      'paginationSize' => 10,
+      'paginationSizeSelector' => true,
+    ]);
+    $config->setArray($options ?: []);
+    $config = $config->getArray();
+    $config['data'] = $this->getRowArray();
+    $json = json_encode($config);
+
+    // prepare output
+    $id = uniqid();
+    $out = '';
+
+    // build output string
+    if($opt->title) $out.= "<h2>$opt->title</h2>";
+    $out .= "<div id='tab_$id'>loading...</div>
+    <script>
+    if(typeof Tabulator == 'undefined') {
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/tabulator-tables@4.6.3/dist/css/tabulator.min.css';
+      document.getElementsByTagName('head')[0].appendChild(link);
+
+      tabulatorLoader = function(src, callback) {
+        var script = document.createElement('script'),
+        loaded;
+        script.setAttribute('src', src);
+        if(callback) {
+          script.onreadystatechange = script.onload = function() {
+            if(!loaded) {
+              callback();
+            }
+            loaded = true;
+          };
+        }
+        document.getElementsByTagName('head')[0].appendChild(script);
+      };
+
+      tabulatorLoader('https://unpkg.com/tabulator-tables@4.6.3/dist/js/tabulator.min.js', function() {
+        new Tabulator('#tab_$id', $json);
+      });
+    }
+    else new Tabulator('#tab_$id', $json);
+    </script>";
+
+    return $out;
+  }
+
+  /**
+   * Dump SQL of current finder to console (supports chaining)
+   * @return RockFinder3
+   */
+  public function dumpSQL() {
+    \TD::dumpBig($this->getSQL());
+    return $this;
+  }
+
+  /**
+   * Dump SQL of current finder to tracy bar (supports chaining)
+   * @return RockFinder3
+   */
+  public function barDumpSQL() {
+    \TD::barDumpBig($this->getSQL());
+    return $this;
+  }
+
+  /** ########## END TRACY DEBUGGER ########## */
 
   /**
    * Add column to finder
@@ -377,6 +555,20 @@ class RockFinder3 extends WireData implements Module {
   }
 
   /**
+   * Apply callbacks to each row
+   * @param array $rows
+   * @return array
+   */
+  private function applyCallbacks($rows) {
+    // do only apply callback once!
+    foreach($this->callbacks->find("applied=0") as $cb) {
+      foreach($rows as $row) $cb->callback->__invoke($row, $this);
+      $cb->applied = true;
+    }
+    return $rows;
+  }
+
+  /**
    * Apply join to current finder
    * @param RockFinder3 $join
    * @return void
@@ -409,56 +601,6 @@ class RockFinder3 extends WireData implements Module {
     // now restrict the relation to these ids
     $ids = implode(",", $ids);
     $this->query->where("pages.id IN ($ids)");
-  }
-
-  /**
-   * Dump this finder to the tracy console
-   *
-   * Set title to TRUE to dump the finder object.
-   *
-   * @return void
-   */
-  public function dump($title = null, $options = null) {
-    $settings = $this->wire(new WireData()); /** @var WireData $settings */
-    $settings->setArray([
-      'layout' => 'fitColumns',
-      'autoColumns' => true,
-      'pagination' => "local",
-      'paginationSize' => 10,
-      'paginationSizeSelector' => true,
-    ]);
-    $settings->setArray($options ?: []);
-    $settings = $settings->getArray();
-    $settings['data'] = $this->getRowArray();
-    $json = json_encode($settings);
-    $id = uniqid();
-
-    if($title === true) db($this);
-    elseif($title) echo "<h2>$title</h2>";
-    echo "<div id='tab_$id'>loading...</div>
-    <script>
-    if(typeof Tabulator == 'undefined') {
-      var link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/tabulator-tables@4.6.3/dist/css/tabulator.min.css';
-      document.getElementsByTagName('head')[0].appendChild(link);
-      tracyJSLoader.load('https://unpkg.com/tabulator-tables@4.6.3/dist/js/tabulator.min.js', function() {
-        new Tabulator('#tab_$id', $json);
-      });
-    }
-    else new Tabulator('#tab_$id', $json);
-    </script>";
-
-    return $this;
-  }
-
-  /**
-   * Dump SQL of current finder to console
-   * @return void
-   */
-  public function dumpSQL() {
-    db($this->getSQL());
-    return $this;
   }
 
   /**
@@ -551,6 +693,7 @@ class RockFinder3 extends WireData implements Module {
       'columns' => $this->columns,
       'options' => $this->options,
       'relations' => $this->relations,
+      'callbacks' => $this->callbacks,
       'joins' => $this->joins,
       'getRows()' => $this->getRows(),
     ];

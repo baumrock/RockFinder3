@@ -71,7 +71,9 @@ $rockfinder3->find("template=foo");
 $modules->get('RockFinder3')->find("template=foo");
 ```
 
-## Adding columns
+![img](hr.svg)
+
+# Adding columns
 
 You'll most likely don't need only ids, so there is the `addColumns()` method for adding additional columns:
 
@@ -85,22 +87,39 @@ $rockfinder3
 
 This makes it possible to easily add any field data of the requested page.
 
-## Dumping data
+![img](hr.svg)
 
-For small finders Tracy's `dump()` feature is enough, but if you have more complex finders or you have thousands of pages this might get really inconvenient. That's why RockFinder3 ships with a custom `dump()` method that works in the tracy console and turns the result of the finder into a paginated table (using tabulator.info):
+# Dumping data
+
+For small finders Tracy's `dump()` feature is enough, but if you have more complex finders or you have thousands of pages this might get really inconvenient. That's why RockFinder3 ships with a custom `dump()` method that works in the tracy console and turns the result of the finder into a paginated table (using tabulator.info).
+
+For all the dumping methods you can provide two parameters:
+
+1. The title of the dump*
+1. The settings for the rendered tabulator table
+
+*Note that if you set the title to TRUE the method will not only dump the tabulator but also the current RockFinder3 object (see the next example).
+
+## dump() or d()
 
 ```php
 $rockfinder3
   ->find("id>0")
   ->addColumns(['title', 'created'])
-  ->dump();
+  ->dump(true);
 ```
 
-![img](https://i.imgur.com/dfHdrG7.png)
+![img](https://i.imgur.com/MbIA7fZ.png)
+
+## barDump() or bd()
+
+For situations where you are not working in the console but maybe in a template file or a module the `barDump()` method might be useful.
+
+![img](https://i.imgur.com/LHhqJk5.png)
 
 ## Dumping the SQL of the finder
 
-To understand what is going on it is important to know the SQL that is executed. You can easily dump the SQL query via the `dumpSQL()` method. This even supports chaining:
+To understand what is going on it is important to know the SQL that is executed. You can easily dump the SQL query via the `dumpSQL()` or `barDumpSQL()` methods. This even supports chaining:
 
 ```php
 $rockfinder3
@@ -114,7 +133,9 @@ $rockfinder3
 
 ![img](https://i.imgur.com/AfUy2OF.png)
 
-## Renaming columns (column aliases)
+![img](hr.svg)
+
+# Renaming columns (column aliases)
 
 Sometimes you have complicated fieldnames like `my_great_module_field_foo` and you just want to get the values of this field as column `foo` in your result:
 
@@ -127,7 +148,9 @@ $rockfinder3
 
 ![img](https://i.imgur.com/TIpk3pu.png)
 
-## Custom column types
+![img](hr.svg)
+
+# Custom column types
 
 You can add custom column types easily. Just place them in a folder and tell RockFinder to scan this directory for columnTypes:
 
@@ -237,6 +260,54 @@ class Text extends \RockFinder3\Column {
 This will use these values behind the scenes (here for the `title` field):
 
 ![img](https://i.imgur.com/gQA22HA.png)
+
+![img](hr.svg)
+
+# Callbacks
+
+RockFinder3 supports row callbacks that are executed on each row of the result. Usage is simple:
+
+## each()
+
+```php
+$RockFinder3
+  ->find("template=cat")
+  ->addColumns(['title', 'weight'])
+  ->each(function($row) { $row->myTitle = "{$row->title} ({$row->weight} kg)"; })
+  ->dump();
+```
+
+![img](https://i.imgur.com/qwkOTjG.png)
+
+These callbacks can be a great option, **but keep in mind that they can also be very resource intensive**! That applies even more when you request page objects from within your callback (meaning there will be no benefit at all in using RockFinder compared to a regular `$pages->find()` call).
+
+## addPath()
+
+A special implementation of the `each()` method is the `addPath()` method that will add a path column to your result showing the path of every page. This will **not** load all pages into memory though, because it uses the `$pages->getPath()` method internally.
+
+```php
+$RockFinder3
+  ->find("template=cat")
+  ->addColumns(['title', 'weight'])
+  ->addPath("de")
+  ->dump();
+```
+
+![img](https://i.imgur.com/lg2zcWI.png)
+
+If you need the path for linking/redirecting from your data to the pages it might be better to build a custom redirect page that works with the page id, so you don't need the overhead of getting all page paths:
+
+```html
+<a href='/your/redirect/url/?id=123'>Open Page 123</a>
+```
+
+If you *really* need to access page objects you can get them via the `$finder` parameter of the callback:
+
+```php
+$finder->each(function($row, $finder) {
+  $row->foo = $finder->pages->get($row->id)->foo;
+}
+```
 
 ![img](hr.svg)
 
