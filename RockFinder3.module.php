@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.4',
+      'version' => '1.0.5',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -515,6 +515,20 @@ public function addPath($lang = null) {
   }
 
   /** ########## END TRACY DEBUGGER ########## */
+
+  /** ########## TABULATOR METHODS ########## */
+
+  /**
+   * Get html markup of dumped table
+   * @return string
+   */
+  public function getDump() {
+    ob_start();
+    $this->dump();
+    return ob_get_clean();
+  }
+
+  /** ########## END TABULATOR METHODS ########## */
 
   /**
    * Add column to finder
