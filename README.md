@@ -21,7 +21,7 @@ Possible use cases:
 
 ## Differences to previous RockFinder modules
 
-* RF3 supports chaining: `$rockfinder3->find("template=foo")->addColumns(['foo'])`.
+* RF3 supports chaining: `$rockfinder->find("template=foo")->addColumns(['foo'])`.
 * RF3 fully supports [multi-language](#multi-language).
 * RF3 makes it super-easy to [add custom columnTypes](#custom-column-types).
 * RF3 makes it easier to use [custom SQL statements](#custom-sql).
@@ -55,7 +55,7 @@ This is the magic behind RockFinder3! It provides an easy to use API to modify t
 
 # Installation
 
-Install the RockFinder3Master module. The master module is an autoload module that adds a new variable `$rockfinder3` to the PW API and also installs the `RockFinder3` module that is responsible for all the finding stuff.
+Install the RockFinder3Master module. The master module is an autoload module that adds a new variable `$rockfinder` to the PW API and also installs the `RockFinder3` module that is responsible for all the finding stuff.
 
 ![img](hr.svg)
 
@@ -65,7 +65,7 @@ In the most basic setup the only thing you need to provide to a RockFinder is a 
 
 ```php
 // either via the API variable
-$rockfinder3->find("template=foo");
+$rockfinder->find("template=foo");
 
 // or via a modules call
 $modules->get('RockFinder3')->find("template=foo");
@@ -78,7 +78,7 @@ $modules->get('RockFinder3')->find("template=foo");
 You'll most likely don't need only ids, so there is the `addColumns()` method for adding additional columns:
 
 ```php
-$rockfinder3
+$rockfinder
   ->find("template=admin, limit=3")
   ->addColumns(['title', 'created']);
 ```
@@ -103,7 +103,7 @@ For all the dumping methods you can provide two parameters:
 ## dump() or d()
 
 ```php
-$rockfinder3
+$rockfinder
   ->find("id>0")
   ->addColumns(['title', 'created'])
   ->dump(true);
@@ -122,7 +122,7 @@ For situations where you are not working in the console but maybe in a template 
 To understand what is going on it is important to know the SQL that is executed. You can easily dump the SQL query via the `dumpSQL()` or `barDumpSQL()` methods. This even supports chaining:
 
 ```php
-$rockfinder3
+$rockfinder
   ->find("template=cat")
   ->addColumns(['title'])
   ->dumpSQL()
@@ -140,7 +140,7 @@ $rockfinder3
 Sometimes you have complicated fieldnames like `my_great_module_field_foo` and you just want to get the values of this field as column `foo` in your result:
 
 ```php
-$rockfinder3
+$rockfinder
   ->find("template=person")
   ->addColumns(['title' => 'Name', 'age' => 'Age in years', 'weight' => 'KG'])
   ->dump();
@@ -168,7 +168,7 @@ See the existing columnTypes as learning examples.
 By default RockFinder will query the `data` column in the DB for each requested field. That's fine for lots of fields (like Text or Textarea fields), but for more complex fields this will often just return an ID value instead of the value that we would like to see (like a file name, an option value, etc):
 
 ```php
-$rockfinder3
+$rockfinder
   ->find("template=cat")
   ->addColumns(['title', 'sex'])
   ->dump();
@@ -181,7 +181,7 @@ $rockfinder3
 In case of the `Options` Fieldtype we have a `title` and a `value` entry for each option. That's why RockFinder ships with two custom columnTypes that query those values directly from the DB (thanks to a PR from David Karich @RockFinder2). You can even get both values in one single query:
 
 ```php
-$rockfinder3
+$rockfinder
   ->find("template=cat")
   ->addColumns([
     'title',
@@ -203,7 +203,7 @@ Option 1 is very handy but also comes with a drawback: It loads all values and a
 Option 2 lets you save options data in the finder's `getData()->option` property so that you can then work with it at runtime (like via JS in a grid that only renders a subset of the result):
 
 ```php
-$rockfinder3
+$rockfinder
   ->find("template=cat")
   ->addColumns([
     'title',
@@ -235,7 +235,7 @@ Usually data of a field is stored in the `data` db column of the field. On a mul
 
 ```php
 $user->language = $languages->get(1245);
-$rockfinder3
+$rockfinder
   ->find("template=cat")
   ->addColumns([
     'title',
@@ -270,7 +270,7 @@ RockFinder3 supports row callbacks that are executed on each row of the result. 
 ## each()
 
 ```php
-$rockfinder3
+$rockfinder
   ->find("template=cat")
   ->addColumns(['title', 'weight'])
   ->each(function($row) { $row->myTitle = "{$row->title} ({$row->weight} kg)"; })
@@ -286,7 +286,7 @@ These callbacks can be a great option, **but keep in mind that they can also be 
 A special implementation of the `each()` method is the `addPath()` method that will add a path column to your result showing the path of every page. This will **not** load all pages into memory though, because it uses the `$pages->getPath()` method internally.
 
 ```php
-$rockfinder3
+$rockfinder
   ->find("template=cat")
   ->addColumns(['title', 'weight'])
   ->addPath("de")
@@ -316,7 +316,7 @@ $finder->each(function($row, $finder) {
 What if we had a template `cat` that holds data of the cat, but also references one single owner. And what if we wanted to get a list of all cats including their owners names and age? The owner would be a single page reference field, so the result of this column would be the page id of the owner:
 
 ```php
-$rockfinder3
+$rockfinder
   ->find("template=cat")
   ->addColumns(['title', 'owner'])
   ->dump();
@@ -327,11 +327,11 @@ $rockfinder3
 Joins to the rescue:
 
 ```php
-$owners = $rockfinder3
+$owners = $rockfinder
   ->find("template=person")
   ->addColumns(['title', 'age'])
   ->setName('owner'); // set name of target column
-$rockfinder3
+$rockfinder
   ->find("template=cat")
   ->addColumns(['title', 'owner'])
   ->join($owners)
@@ -361,7 +361,7 @@ Let's take a simple example where we have a page reference field on template `ca
 This is what happens if we query the field in our finder:
 
 ```php
-$rockfinder3
+$rockfinder
   ->find("template=cat")
   ->addColumns(['title', 'kittens'])
   ->dump();
@@ -375,13 +375,13 @@ Relations to the rescue:
 
 ```php
 // setup kittens finder that can later be added as relation
-$kittens = $rockfinder3
+$kittens = $rockfinder
   ->find("template=kitten")
   ->setName("kittens")
   ->addColumns(['title', 'OptionsTitle:sex', 'age']);
 
 // setup main finder that finds cats
-$finder = $rockfinder3
+$finder = $rockfinder
   ->find("template=cat,limit=1")
   ->setName("cats")
   ->addColumns(['title', 'kittens'])
@@ -436,7 +436,7 @@ There's a lot you can do already simply using the RockFinder API, but I promised
 RockFinder3 is heavily based on the `DatabaseQuerySelect` class of ProcessWire. This is an awesome class for building all kinds of SQL `SELECT` statements - from simple to very complex ones. You can access this query object at any time via the `query` property of the finder:
 
 ```php
-$owners = $rockfinder3
+$owners = $rockfinder
   ->find("template=person")
   ->addColumns(['title', 'age', 'weight']);
 db($owners->query);
@@ -447,7 +447,7 @@ db($owners->query);
 This means you have full control over your executed SQL command:
 
 ```php
-$finder = $rockfinder3->find(...)->addColumns(...);
+$finder = $rockfinder->find(...)->addColumns(...);
 $finder->query->select("foo AS foo");
 $finder->query->select("bar AS bar");
 $finder->query->where("this = that");
@@ -456,7 +456,7 @@ $finder->query->where("this = that");
 The only thing you need to take care of is to query the correct tables and columns. This might seem a little hard because many times the names are made unique by a temporary suffix. It's very easy to access these values though:
 
 ```php
-$owners = $rockfinder3
+$owners = $rockfinder
   ->find("template=person")
   ->setName('owner')
   ->addColumns(['title', 'age']);
@@ -470,11 +470,11 @@ db($owners->columns->get('age'));
 Another technique is to get the resulting SQL and wrap it around a custom SQL query:
 
 ```php
-$owners = $rockfinder3
+$owners = $rockfinder
   ->find("template=person")
   ->addColumns(['title', 'age', 'weight'])
   ->setName('owner');
-$cats = $rockfinder3
+$cats = $rockfinder
   ->find("template=cat")
   ->addColumns(['title', 'owner'])
   ->join($owners)
@@ -484,7 +484,7 @@ $cats = $rockfinder3
 Get average age of all owners:
 
 ```php
-db($rockfinder3->getObject("
+db($rockfinder->getObject("
   SELECT AVG(`owner:age`) FROM ($cats) AS tmp
 "));
 ```
@@ -494,7 +494,7 @@ db($rockfinder3->getObject("
 Get average age of all owners older than 50 years:
 
 ```php
-db($rockfinder3->getObject("
+db($rockfinder->getObject("
   SELECT
   AVG(`owner:age`) AS `age`,
   `owner:weight` as `weight`
@@ -505,7 +505,7 @@ db($rockfinder3->getObject("
 
 ![img](https://i.imgur.com/05rQ7oQ.png)
 
-You SQL skills are the limit!
+Your SQL skills are the limit!
 
 ![img](hr.svg)
 
