@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.6',
+      'version' => '1.0.7',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -655,13 +655,13 @@ public function addPath($lang = null) {
     $this->applyRowLimit();
 
     // return sql
-    if(version_compare($this->config->version, "3.0.158") <= 0) {
+    if(version_compare($this->config->version, "3.0.158") >= 0) {
       // pw newer or equal to 3.0.158
       $sql = $this->query->getDebugQuery();
     }
     else {
       // pw older than 3.0.158
-      if(version_compare($this->config->version, "3.0.155") >= 0) {
+      if(version_compare($this->config->version, "3.0.155") <= 0) {
         throw new WireException("RockFinder3 does not work with this specific
         version of ProcessWire - please upgrade to 3.0.158+
         or downgrade to 3.0.154 or lower");
