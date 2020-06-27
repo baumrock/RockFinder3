@@ -246,7 +246,7 @@ $rockfinder
 
 ![img](https://i.imgur.com/1R6ukB8.png)
 
-Even setting up new columnTypes is easy! Just use the built in `select` proerty of the column and it will return the correct SQL query for you:
+Even setting up new columnTypes is easy! Just use the built in `select` property of the column and it will return the correct SQL query for you:
 
 ```php
 class Text extends \RockFinder3\Column {
