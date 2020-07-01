@@ -89,6 +89,36 @@ This makes it possible to easily add any field data of the requested page.
 
 ![img](hr.svg)
 
+# Getting data
+
+When using a regular `$pages->find()` you get a `PageArray` as result. When working with RockFinder we don't want to get the PageArray to be more efficient. We usually want plain PHP arrays that we can then use in our PHP code or that we can send to other libraries as data source (for example as rows for a table library).
+
+## getRows()
+
+This returns an array of the result having the `id` as key for every array item:
+
+```php
+$finder = $rockfinder
+  ->find("template=cat")
+  ->addColumns(['title', 'owner']);
+$rows = $finder->getRows();
+db($rows);
+```
+
+![img](https://i.imgur.com/leSeVhf.png)
+
+Having the `id` as item key can be very handy and efficient to get one single array item via its id, eg `db($rows[1071])`:
+
+![img](https://i.imgur.com/zsFBR23.png)
+
+## getRowArray()
+
+Sometimes having custom ids as array item keys is a drawback, though. For example tabulator needs a plain PHP array with auto-increment keys. In such cases you can use `getRowArray()`:
+
+![img](https://i.imgur.com/eyclrNb.png)
+
+![img](hr.svg)
+
 # Dumping data
 
 For small finders Tracy's `dump()` feature is enough, but if you have more complex finders or you have thousands of pages this might get really inconvenient. That's why RockFinder3 ships with a custom `dump()` method that works in the tracy console and turns the result of the finder into a paginated table (using tabulator.info).
@@ -506,6 +536,36 @@ db($rockfinder->getObject("
 ![img](https://i.imgur.com/05rQ7oQ.png)
 
 Your SQL skills are the limit!
+
+### Predefined Methods
+
+At the moment there is one shortcut using the string modification technique for grouping a result by one column:
+
+```php
+$finder = $rockfinder
+  ->find("template=cat")
+  ->addColumns(['title', 'owner']);
+$cats_by_owner = $finder->groupBy('owner', [
+    'GROUP_CONCAT(title) as title',
+]);
+db($cats_by_owner);
+```
+
+![img](https://i.imgur.com/I9yl6Zp.png)
+
+Another example could be getting averages:
+
+```php
+$finder = $rockfinder
+  ->find("template=cat")
+  ->addColumns(['title', 'owner', 'weight']);
+$cat_weight_by_owner = $finder->groupBy('owner', [
+    'AVG(weight) as weight',
+]);
+db($cat_weight_by_owner);
+```
+
+![img](https://i.imgur.com/CY6SdjQ.png)
 
 ![img](hr.svg)
 

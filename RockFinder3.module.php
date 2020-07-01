@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.7',
+      'version' => '1.0.8',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -370,6 +370,29 @@ public function addPath($lang = null) {
   }
 
   /** ########## END GET DATA ########## */
+
+  /** ########## AGGREGATION HELPERS ########## */
+
+  /**
+   * Group result by one column
+   * @return array
+   */
+  public function groupBy($name, $columns = []) {
+    $sql = $this->getSQL();
+    $select = "`$name`";
+    foreach($columns as $col) $select .= ",$col";
+    $sql = "SELECT $select FROM ($sql) as tmp GROUP BY `$name`";
+    $result = $this->database->query($sql);
+    $rows = [];
+    foreach($result->fetchAll(\PDO::FETCH_OBJ) as $row) {
+      $id = $row->$name;
+      unset($row->$name);
+      $rows[$id] = $row;
+    }
+    return $rows;
+  }
+
+  /** ########## END AGGREGATION HELPERS ########## */
 
   /** ########## TRACY DEBUGGER ########## */
 
