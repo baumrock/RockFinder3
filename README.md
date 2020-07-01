@@ -567,6 +567,22 @@ db($cat_weight_by_owner);
 
 ![img](https://i.imgur.com/CY6SdjQ.png)
 
+Of course you can combine both:
+
+```php
+$finder = $rockfinder
+  ->find("template=cat")
+  ->addColumns(['title', 'owner', 'weight']);
+$combined = $finder->groupBy('owner', [
+    'GROUP_CONCAT(title) as title',
+    'AVG(weight) as weight',
+]);
+db($combined);
+```
+
+![img](https://i.imgur.com/sGQWmU3.png)
+
+
 ![img](hr.svg)
 
 # Thank you
