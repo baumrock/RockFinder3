@@ -495,9 +495,9 @@ db($owners->columns->get('age'));
 
 ![img](https://i.imgur.com/iRnrfPJ.png)
 
-### Example
+### Example: Group by date
 
-As an example we will create a list of the count of cats and dogs related to their page-creation day:
+As an example we will create a list of the count of cats and dogs related to their page-creation day. We start with a simple list of all ids of cats and dogs:
 
 ```php
 $rf = $rockfinder->find("template=cat|dog");
