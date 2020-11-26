@@ -495,6 +495,63 @@ db($owners->columns->get('age'));
 
 ![img](https://i.imgur.com/iRnrfPJ.png)
 
+### Example
+
+As an example we will create a list of the count of cats and dogs related to their page-creation day:
+
+```php
+$rf = $rockfinder->find("template=cat|dog");
+$rf->dumpSQL();
+$rf->dump();
+```
+
+![img](https://i.imgur.com/G8nZER6.png)
+
+We can't simply add the `created` column because this is a timestamp. We need a formatted date, so we add it as custom SQL:
+
+```php
+$rf = $rockfinder->find("template=cat|dog");
+$rf->query->select("DATE_FORMAT(pages.created, '%Y-%m-%d') as created");
+$rf->dumpSQL();
+$rf->dump();
+```
+
+![img](https://i.imgur.com/6e0jyVz.png)
+
+Great! Now we need to group the result by the date string:
+
+```php
+$rf = $rockfinder->find("template=cat|dog");
+$rf->query->select("DATE_FORMAT(pages.created, '%Y-%m-%d') as created");
+$rf->query->select("COUNT(id) as cnt");
+$rf->query->groupby("DATE_FORMAT(pages.created, '%Y-%m-%d')");
+$rf->dumpSQL();
+$rf->dump();
+```
+
+![img](https://i.imgur.com/7ZmruOD.png)
+
+Wait... That's not what we expected, right? That's because we still have the `pages.id` column in our `SELECT` and `GROUP BY` statement and therefore we end up with all the cats and dogs as unique rows. To get rid of that column we make one important change: Instead of **adding** the `SELECT` and `GROUP BY` statement to the query we **overwrite** it:
+
+```php
+$rf = $rockfinder->find("template=cat|dog");
+$rf->query->set('select', [
+    "DATE_FORMAT(pages.created, '%Y-%m-%d') as created",
+    "COUNT(id) as cnt",
+]);
+$rf->query->set('groupby', [
+    "DATE_FORMAT(pages.created, '%Y-%m-%d')",
+]);
+$rf->dumpSQL();
+$rf->dump();
+```
+
+![img](https://i.imgur.com/SvkFtCS.png)
+
+Not too complicated, right? You want yearly stats? Easy! Simply change the date format string to `%Y`:
+
+![img](https://i.imgur.com/d11hbCg.png)
+
 ## Option 2: SQL String Modification
 
 Another technique is to get the resulting SQL and wrap it around a custom SQL query:
