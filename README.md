@@ -531,7 +531,7 @@ $rf->dump();
 
 ![img](https://i.imgur.com/7ZmruOD.png)
 
-Wait... That's not what we expected, right? That's because we still have the `pages.id` column in our `SELECT` and `GROUP BY` statement and therefore we end up with all the cats and dogs as unique rows. To get rid of that column we make one important change: Instead of **adding** the `SELECT` and `GROUP BY` statement to the query we **overwrite** it:
+Wait... That's not what we expected, right? That's because we still have the `pages.id` column in our `SELECT` and `GROUP BY` statement and therefore we end up with all the cats and dogs as unique rows. To get rid of that column we make one important change: Instead of **adding** the `SELECT` and `GROUP BY` statement to the query we **overwrite** them:
 
 ```php
 $rf = $rockfinder->find("template=cat|dog");
