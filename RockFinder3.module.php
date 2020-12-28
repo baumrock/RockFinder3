@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.8',
+      'version' => '1.0.9',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -377,6 +377,15 @@ public function addPath($lang = null) {
     $rows = $this->master->addRowIds($rows);
     $rows = $this->applyCallbacks($rows);
     return $this->rows = $rows;
+  }
+
+  /**
+   * Return JSON string of current finder
+   * This can be used as AJAX source for tabulator
+   * @return string
+   */
+  public function getJSON() {
+    return json_encode($this->getRowArray());
   }
 
   /** ########## END GET DATA ########## */
