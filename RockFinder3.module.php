@@ -136,6 +136,16 @@ class RockFinder3 extends WireData implements Module {
   }
 
   /**
+   * Add all fields from template as columns
+   * @return self
+   */
+  public function addColumnsFromTemplate($tpl) {
+    $tpl = $this->wire->templates->get((string)$tpl);
+    $this->addColumns($tpl->fields->each('name'));
+    return $this;
+  }
+
+  /**
    * Add options from field
    * @param array|string $field
    * @return RockFinder3

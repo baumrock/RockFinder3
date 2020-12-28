@@ -85,7 +85,13 @@ $rockfinder
 
 ![img](https://i.imgur.com/k0gHwXW.png)
 
-This makes it possible to easily add any field data of the requested page.
+This makes it possible to easily add any field data of the requested page. If you want to add all fields of a template to the finder there is a shortcut:
+
+```php
+$rockfinder
+  ->find("template=foo")
+  ->addColumnsFromTemplate("foo");
+```
 
 ![img](hr.svg)
 
