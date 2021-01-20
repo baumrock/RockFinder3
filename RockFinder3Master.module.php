@@ -22,7 +22,7 @@ class RockFinder3Master extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3Master',
-      'version' => '1.0.5',
+      'version' => '1.0.6',
       'summary' => 'Master Instance of RockFinder3 that is attached as PW API Variable',
       'autoload' => 9000,
       'singular' => true,

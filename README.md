@@ -558,6 +558,8 @@ Not too complicated, right? You want yearly stats? Easy! Simply change the date 
 
 ![img](https://i.imgur.com/d11hbCg.png)
 
+Spoiler: There is a shortcut method `groupby()` described in the section about `Predefined methods` below ;)
+
 ## Option 2: SQL String Modification
 
 Another technique is to get the resulting SQL and wrap it around a custom SQL query:
@@ -574,12 +576,11 @@ $cats = $rockfinder
   ->getSQL();
 ```
 
-Get average age of all owners:
+Now we have the SQL statement in the `$cats` variable. To get the average age of all owners:
 
 ```php
-db($rockfinder->getObject("
-  SELECT AVG(`owner:age`) FROM ($cats) AS tmp
-"));
+$sql = "SELECT AVG(`owner:age`) FROM ($cats) AS tmp";
+db($rockfinder->getObject($sql));
 ```
 
 ![img](https://i.imgur.com/NwqatSv.png)
@@ -587,13 +588,13 @@ db($rockfinder->getObject("
 Get average age of all owners older than 50 years:
 
 ```php
-db($rockfinder->getObject("
-  SELECT
+$sql = "SELECT
   AVG(`owner:age`) AS `age`,
   `owner:weight` as `weight`
   FROM ($cats) AS tmp
   WHERE `owner:age`>50
-"));
+";
+db($rockfinder->getObject($sql));
 ```
 
 ![img](https://i.imgur.com/05rQ7oQ.png)
@@ -609,7 +610,7 @@ $finder = $rockfinder
   ->find("template=cat")
   ->addColumns(['title', 'owner']);
 $cats_by_owner = $finder->groupBy('owner', [
-    'GROUP_CONCAT(title) as title',
+  'GROUP_CONCAT(title) as title',
 ]);
 db($cats_by_owner);
 ```
@@ -623,7 +624,7 @@ $finder = $rockfinder
   ->find("template=cat")
   ->addColumns(['title', 'owner', 'weight']);
 $cat_weight_by_owner = $finder->groupBy('owner', [
-    'AVG(weight) as weight',
+  'AVG(weight) as weight',
 ]);
 db($cat_weight_by_owner);
 ```
@@ -637,14 +638,35 @@ $finder = $rockfinder
   ->find("template=cat")
   ->addColumns(['title', 'owner', 'weight']);
 $combined = $finder->groupBy('owner', [
-    'GROUP_CONCAT(title) as title',
-    'AVG(weight) as weight',
+  'GROUP_CONCAT(title) as title',
+  'AVG(weight) as weight',
 ]);
 db($combined);
 ```
 
 ![img](https://i.imgur.com/sGQWmU3.png)
 
+If you need the SQL statement instead of a PHP array you can set that as one of several options:
+
+```php
+$sql = $finder->groupby('foo', [...], ['sql'=>true]);
+```
+
+For example you can then JOIN complex queries quite easily:
+
+```php
+$foo = $rockfinder->find(...);
+$foosql = $foo->getSQL();
+
+$bar = $rockfinder->find(...);
+$barsql = $bar->groupby('bar', [...], ['sql'=>true]);
+
+$join = "SELECT
+  foo.xx, foo.yy, bar.xx, bar.yy
+  FROM ($foosql) AS foo
+  LEFT JOIN ($barsql) AS bar ON foo.xx = bar.yy";
+db($rockfinder->getObjects($sql));
+```
 
 ![img](hr.svg)
 

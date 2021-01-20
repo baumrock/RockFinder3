@@ -394,20 +394,35 @@ public function addPath($lang = null) {
 
   /**
    * Group result by one column
-   * @return array
+   * @return array|string
    */
-  public function groupBy($name, $columns = []) {
+  public function groupBy($name, $columns = [], $options = []) {
+    $opt = $this->wire(new WireData()); /** @var WireData $opt */
+    $opt->setArray([
+      'keys' => true, // use ids of grouped column as array keys
+      'removeId' => true, // remove id from results object
+      'sql' => false, // return sql statement
+      'alias' => 'tmp',
+    ]);
+    $opt->setArray($options);
+
+    // prepare sql statement
     $sql = $this->getSQL();
     $select = "`$name`";
     foreach($columns as $col) $select .= ",$col";
-    $sql = "SELECT $select FROM ($sql) as tmp GROUP BY `$name`";
-    $result = $this->database->query($sql);
+    $sql = "SELECT $select FROM ($sql) as `{$opt->alias}` GROUP BY `$name`";
+    if($opt->sql) return $sql;
+
+    // fire query
     $rows = [];
+    $result = $this->database->query($sql);
     foreach($result->fetchAll(\PDO::FETCH_OBJ) as $row) {
       $id = $row->$name;
-      unset($row->$name);
-      $rows[$id] = $row;
+      if($opt->removeId) unset($row->$name);
+      if($opt->keys) $rows[$id] = $row;
+      else $rows[] = $row;
     }
+
     return $rows;
   }
 
@@ -543,7 +558,7 @@ public function addPath($lang = null) {
    * @return RockFinder3
    */
   public function dumpSQL() {
-    \TD::dumpBig($this->getSQL());
+    echo("<pre>".$this->getSQL()."</pre>");
     return $this;
   }
 
@@ -552,7 +567,7 @@ public function addPath($lang = null) {
    * @return RockFinder3
    */
   public function barDumpSQL() {
-    \TD::barDumpBig($this->getSQL());
+    \TD::barEcho("<pre>".$this->getSQL()."</pre>");
     return $this;
   }
 
