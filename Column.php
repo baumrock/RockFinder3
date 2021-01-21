@@ -24,7 +24,9 @@ abstract class Column extends \ProcessWire\Wire {
    * @return string
    */
   public function setTable() {
-    $this->table = "field_".$this->name;
+    // name of a column can be fooBar
+    // the corresponding table in the DB is field_foobar (lowercase)
+    $this->table = "field_".strtolower($this->name);
   }
 
   /**
