@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.10',
+      'version' => '1.0.11',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -342,12 +342,15 @@ public function addPath($lang = null) {
 
   /**
    * Get data of relations for finder JSON
+   * All relation rows have their ID as array key for quick access via JS
    * @return string
    */
   public function getRelationsArray() {
     $array = [];
     foreach($this->relations as $r) {
-      $array[$r->name] = $r->getRowArray();
+      $arr = [];
+      foreach($r->getRowArray() as $row) $arr[$row->id] = $row;
+      $array[$r->name] = $arr;
     }
     return $array;
   }
