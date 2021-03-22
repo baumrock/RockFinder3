@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.9',
+      'version' => '1.0.10',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -329,6 +329,30 @@ public function addPath($lang = null) {
   }
 
   /**
+   * Get data of options for finder JSON
+   * @return string
+   */
+  public function getOptionsArray() {
+    $array = [];
+    foreach($this->options->getArray() as $name=>$data) {
+      $array[$name] = array_map(function($item) { return $item->title; }, $data);
+    }
+    return $array;
+  }
+
+  /**
+   * Get data of relations for finder JSON
+   * @return string
+   */
+  public function getRelationsArray() {
+    $array = [];
+    foreach($this->relations as $r) {
+      $array[$r->name] = $r->getRowArray();
+    }
+    return $array;
+  }
+
+  /**
    * Get plain row array ready for tabulator
    * This returns only the array values without page-id-keys
    * otherwise the resulting tabulator array on the client side is invalid.
@@ -384,8 +408,17 @@ public function addPath($lang = null) {
    * This can be used as AJAX source for tabulator
    * @return string
    */
-  public function getJSON() {
-    return json_encode($this->getRowArray());
+  public function getJSON($full = false) {
+    if(!$full) return json_encode($this->getRowArray());
+
+    // the full data json was requested
+    // this includes not only the data rows but also relations etc
+    return json_encode((object)[
+      'type' => 'RockFinder3',
+      'rows' => $this->getRowArray(),
+      'options' => $this->getOptionsArray(),
+      'relations' => $this->getRelationsArray(),
+    ]);
   }
 
   /** ########## END GET DATA ########## */
