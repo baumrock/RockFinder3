@@ -299,6 +299,53 @@ This will use these values behind the scenes (here for the `title` field):
 
 ![img](hr.svg)
 
+# Aggregations
+
+Often we need to calculate sums or averages of table data quickly and efficiently. RockFinder3 makes that easy as well:
+
+```php
+$cats = $rockfinder
+  ->find("template=cat")
+  ->addColumns(['title', 'weight']);
+$cats->dump();
+db($cats->getObject("SELECT SUM(`weight`) AS `total`, COUNT(`id`) AS `cats`, SUM(`weight`)/COUNT(`id`) AS `avg`"));
+```
+
+![img](https://i.imgur.com/SEdbxXx.png)
+
+What happens behind the scenes is that RockFinder3 gets the current SQL query of the finder and adds that as ` FROM (...sql...) AS tmp` to the query that you provide for aggregation.
+
+This is the resulting SQL query of the example above:
+
+```sql
+SELECT SUM(`weight`) AS `total`, COUNT(`id`) AS `cats`, SUM(`weight`)/COUNT(`id`) AS `avg` FROM (
+  SELECT
+    `pages`.`id` AS `id`,
+    `_field_title_605cab16f38ce`.`data` AS `title`,
+    `_field_weight_605cab16f3993`.`data` AS `weight`
+  FROM `pages`
+  LEFT JOIN `field_title` AS `_field_title_605cab16f38ce` ON `_field_title_605cab16f38ce`.`pages_id` = `pages`.`id`
+  LEFT JOIN `field_weight` AS `_field_weight_605cab16f3993` ON `_field_weight_605cab16f3993`.`pages_id` = `pages`.`id`
+  WHERE (pages.templates_id=44)
+  AND (pages.status<1024)
+  GROUP BY pages.id
+) AS tmp
+```
+
+You can even provide a suffix for your query to do things like `GROUP BY` etc:
+
+```php
+$rf = $rockfinder->find("template=cat|dog");
+$rf->addColumns(['created']);
+$rf->dump();
+db($rf->getObjects(
+  "SELECT COUNT(id) AS `count`, DATE_FORMAT(created, '%Y-%m-%d') AS `date`",
+  "GROUP BY DATE_FORMAT(created, '%Y-%m-%d')"
+));
+```
+
+![img](https://i.imgur.com/QjPfpgM.png)
+
 # Callbacks
 
 RockFinder3 supports row callbacks that are executed on each row of the result. Usage is simple:
@@ -503,7 +550,11 @@ db($owners->columns->get('age'));
 
 ### Example: Group by date
 
-As an example we will create a list of the count of cats and dogs related to their page-creation day. We start with a simple list of all ids of cats and dogs:
+As an example we will create a list of the count of cats and dogs related to their page-creation day. We start with a simple list of all ids of cats and dogs.
+
+Spoiler: There is a shortcut method `groupby()` described in the section about `Predefined methods` below ;)
+
+Also note that since 03/2021 there is another option to get aggregated data from a finder result. In my opinion it is a little easier to read and to learn. See section `Aggregations` above!
 
 ```php
 $rf = $rockfinder->find("template=cat|dog");
@@ -557,8 +608,6 @@ $rf->dump();
 Not too complicated, right? You want yearly stats? Easy! Simply change the date format string to `%Y`:
 
 ![img](https://i.imgur.com/d11hbCg.png)
-
-Spoiler: There is a shortcut method `groupby()` described in the section about `Predefined methods` below ;)
 
 ## Option 2: SQL String Modification
 

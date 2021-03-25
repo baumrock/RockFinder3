@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.12',
+      'version' => '1.0.13',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -741,8 +741,9 @@ class RockFinder3 extends WireData implements Module {
    * Get first result object on a custom SQL query on this finder
    * @return object
    */
-  public function getObject($sql) {
-    $sql .= " FROM ({$this->getSQL()}) AS tmp";
+  public function getObject($sql, $suffix = '') {
+    $sub = str_replace("\n", "\n  ", $this->getSQL());
+    $sql .= trim(" FROM (\n  $sub\n) AS tmp ".$suffix);
     return $this->master->getObject($sql);
   }
 
@@ -750,8 +751,9 @@ class RockFinder3 extends WireData implements Module {
    * Get result objects on a custom SQL query on this finder
    * @return object
    */
-  public function getObjects($sql) {
-    $sql .= " FROM ({$this->getSQL()}) AS tmp";
+  public function getObjects($sql, $suffix = '') {
+    $sub = str_replace("\n", "\n  ", $this->getSQL());
+    $sql .= trim(" FROM (\n  $sub\n) AS tmp ".$suffix);
     return $this->master->getObjects($sql);
   }
 
