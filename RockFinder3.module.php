@@ -90,536 +90,536 @@ class RockFinder3 extends WireData implements Module {
 
   /** ########## CHAINABLE PUBLIC API METHODS ########## */
 
-  /**
-   * Add a single column by name
-   * @return RockFinder3
-   */
-  public function addColumn($colname) {
-    return $this->addColumns([$colname]);
-  }
-
-  /**
-   * Add columns to finder
-   * @param array $columns
-   * @return RockFinder3
-   */
-  public function addColumns($columns) {
-    if(!$this->query) throw new WireException("Setup the selector before calling addColumns()");
-    if(!is_array($columns)) throw new WireException("Parameter must be an array");
-
-    // add columns one by one
-    foreach($columns as $name=>$value) {
-      // skip null value columns
-      if($value === null) continue;
-
-      // if key is integer we take the value instead
-      if(is_int($name)) {
-        $name = $value;
-        $alias = null;
-      }
-      else $alias = $value;
-
-      // if a type is set, get type
-      // syntax is type:column, eg addColumns(['mytype:myColumn'])
-      $type = null;
-      if(strpos($name, ":")) {
-        $arr = explode(":", $name);
-        $type = $arr[0];
-        $name = $arr[1];
-      }
-
-      // add this column
-      $this->_addColumn($name, $type, $alias);
+    /**
+     * Add a single column by name
+     * @return RockFinder3
+     */
+    public function addColumn($colname) {
+      return $this->addColumns([$colname]);
     }
 
-    return $this;
-  }
+    /**
+     * Add columns to finder
+     * @param array $columns
+     * @return RockFinder3
+     */
+    public function addColumns($columns) {
+      if(!$this->query) throw new WireException("Setup the selector before calling addColumns()");
+      if(!is_array($columns)) throw new WireException("Parameter must be an array");
 
-  /**
-   * Add all fields from template as columns
-   * @return self
-   */
-  public function addColumnsFromTemplate($tpl) {
-    $tpl = $this->wire->templates->get((string)$tpl);
-    $this->addColumns($tpl->fields->each('name'));
-    return $this;
-  }
+      // add columns one by one
+      foreach($columns as $name=>$value) {
+        // skip null value columns
+        if($value === null) continue;
 
-  /**
-   * Add options from field
-   * @param array|string $field
-   * @return RockFinder3
-   */
-  public function addOptions($field) {
-    if(is_array($field)) {
-      foreach($field as $f) $this->addOptions($f);
+        // if key is integer we take the value instead
+        if(is_int($name)) {
+          $name = $value;
+          $alias = null;
+        }
+        else $alias = $value;
+
+        // if a type is set, get type
+        // syntax is type:column, eg addColumns(['mytype:myColumn'])
+        $type = null;
+        if(strpos($name, ":")) {
+          $arr = explode(":", $name);
+          $type = $arr[0];
+          $name = $arr[1];
+        }
+
+        // add this column
+        $this->_addColumn($name, $type, $alias);
+      }
+
       return $this;
     }
 
-    $fieldname = (string)$field;
-    $field = $this->fields->get($fieldname);
-    if(!$field) throw new WireException("Field $fieldname not found");
+    /**
+     * Add all fields from template as columns
+     * @return self
+     */
+    public function addColumnsFromTemplate($tpl) {
+      $tpl = $this->wire->templates->get((string)$tpl);
+      $this->addColumns($tpl->fields->each('name'));
+      return $this;
+    }
 
-    $data = [];
-    foreach($field->type->getOptions($field) as $option) {
+    /**
+     * Add options from field
+     * @param array|string $field
+     * @return RockFinder3
+     */
+    public function addOptions($field) {
+      if(is_array($field)) {
+        foreach($field as $f) $this->addOptions($f);
+        return $this;
+      }
+
+      $fieldname = (string)$field;
+      $field = $this->fields->get($fieldname);
+      if(!$field) throw new WireException("Field $fieldname not found");
+
+      $data = [];
+      foreach($field->type->getOptions($field) as $option) {
+        $opt = $this->wire(new WireData()); /** @var WireData $opt */
+        $opt->value = $option->value;
+        $opt->title = $option->title;
+        $data[$option->id] = $opt;
+      }
+      $this->options->$fieldname = $data;
+      return $this;
+    }
+
+    /**
+     * Add path to each row
+     * @param mixed $lang
+     * @return RockFinder3
+     */
+    public function addPath($lang = null) {
+      // get language via id or name, eg ->addPath("de")
+      $lang = $this->languages((string)$lang)->id;
+      $this->each(function($row, $finder) use($lang) {
+        $row->path = $finder->pages->getPath($row->id, $lang);
+      });
+      return $this;
+    }
+
+    /**
+     * Add relation to this finder
+     *
+     * @param RockFinder3 $relation
+     * @param bool $returnAll
+     * @return RockFinder3
+     */
+    public function addRelation($relation, $returnAll = false) {
+      if(!$returnAll) $relation->limitRowsTo = $this;
+      if(!$this->columns->has($relation->name)) {
+        throw new WireException($relation->name . " not found: The name of your relation must exist as column in the main finder");
+      }
+      $this->relations->add($relation);
+      return $this;
+    }
+
+    /**
+     * Apply callback to every row of result
+     * @param callable $callback
+     * @return RockFinder3
+     */
+    public function each($callback) {
+      $_callback = $this->wire(new WireData()); /** @var WireData $_callback */
+      $_callback->applied = false;
+      $_callback->callback = $callback;
+      $this->callbacks->add($_callback);
+      return $this;
+    }
+
+    /**
+     * Set selector of this finder
+     * @param string|array|DatabaseQuerySelect $selector
+     * @return RockFinder3
+     */
+    public function find($selector) {
+      $this->selector = $selector;
+
+      // prepare the query selector property
+      if($selector instanceof DatabaseQuerySelect) {
+        $query = $selector;
+      }
+      else {
+        // get ids of base selector
+        $selector = $this->wire(new Selectors($selector));
+        $pf = $this->wire(new PageFinder());
+        $query = $pf->find($selector, ['returnQuery' => true]);
+
+        // modify the base query to our needs
+        // we only need the page id
+        // setting the alias via AS is necessary for hideColumns() feature
+        $query->set('select', ['`pages`.`id` AS `id`']);
+      }
+
+      // save this query object for later
+      $this->query = $query;
+
+      // support chaining
+      return $this;
+    }
+
+    /**
+     * Join slave finder to master finder
+     *
+     * @param RockFinder3 $slave
+     * @param array $options
+     * @return RockFinder3
+     */
+    public function join($slave, $options = []) {
+      // check if a column with slave name exists
+      if(!$this->columns->has($slave->name)) {
+        throw new WireException($slave->name . " not found: The name of the finder to be joined must exist as column in the main finder");
+      }
+
+      // setup options
       $opt = $this->wire(new WireData()); /** @var WireData $opt */
-      $opt->value = $option->value;
-      $opt->title = $option->title;
-      $data[$option->id] = $opt;
-    }
-    $this->options->$fieldname = $data;
-    return $this;
-  }
+      $opt->setArray([
+        'columns' => null, // null = join all columns, otherwise define an array
+        'removeID' => false, // dont remove the column used for the join
+      ]);
+      $opt->setArray($options);
 
-  /**
-   * Add path to each row
-   * @param mixed $lang
-   * @return RockFinder3
-   */
-public function addPath($lang = null) {
-  // get language via id or name, eg ->addPath("de")
-  $lang = $this->languages((string)$lang)->id;
-  $this->each(function($row, $finder) use($lang) {
-    $row->path = $finder->pages->getPath($row->id, $lang);
-  });
-  return $this;
-}
+      // create new join finder
+      /** @var RockFinder3 */
+      $join = $this->modules->get('RockFinder3');
+      $join->find($slave->selector);
+      $join->main = $this; // main finder
+      $join->joinColName = $slave->name; // colname for join
+      $join->removeJoinCol = $opt->removeID; // remove join base column?
+      $join->setName("join_{$slave->name}_".uniqid());
 
-  /**
-   * Add relation to this finder
-   *
-   * @param RockFinder3 $relation
-   * @param bool $returnAll
-   * @return RockFinder3
-   */
-  public function addRelation($relation, $returnAll = false) {
-    if(!$returnAll) $relation->limitRowsTo = $this;
-    if(!$this->columns->has($relation->name)) {
-      throw new WireException($relation->name . " not found: The name of your relation must exist as column in the main finder");
-    }
-    $this->relations->add($relation);
-    return $this;
-  }
+      // add columns
+      if(!$opt->columns) $opt->columns = $slave->columns;
+      foreach($opt->columns as $colname) {
+        $col = $slave->columns->get($colname);
+        $join->addColumnType($col);
+      }
 
-  /**
-   * Apply callback to every row of result
-   * @param callable $callback
-   * @return RockFinder3
-   */
-  public function each($callback) {
-    $_callback = $this->wire(new WireData()); /** @var WireData $_callback */
-    $_callback->applied = false;
-    $_callback->callback = $callback;
-    $this->callbacks->add($_callback);
-    return $this;
-  }
+      // apply join to this finder
+      $this->joins->add($join);
+      $this->applyJoin($join);
 
-  /**
-   * Set selector of this finder
-   * @param string|array|DatabaseQuerySelect $selector
-   * @return RockFinder3
-   */
-  public function find($selector) {
-    $this->selector = $selector;
-
-    // prepare the query selector property
-    if($selector instanceof DatabaseQuerySelect) {
-      $query = $selector;
-    }
-    else {
-      // get ids of base selector
-      $selector = $this->wire(new Selectors($selector));
-      $pf = $this->wire(new PageFinder());
-      $query = $pf->find($selector, ['returnQuery' => true]);
-
-      // modify the base query to our needs
-      // we only need the page id
-      // setting the alias via AS is necessary for hideColumns() feature
-      $query->set('select', ['`pages`.`id` AS `id`']);
+      return $this;
     }
 
-    // save this query object for later
-    $this->query = $query;
-
-    // support chaining
-    return $this;
-  }
-
-  /**
-   * Join slave finder to master finder
-   *
-   * @param RockFinder3 $slave
-   * @param array $options
-   * @return RockFinder3
-   */
-  public function join($slave, $options = []) {
-    // check if a column with slave name exists
-    if(!$this->columns->has($slave->name)) {
-      throw new WireException($slave->name . " not found: The name of the finder to be joined must exist as column in the main finder");
+    /**
+     * Save this finder to the global array of finders
+     * The finder can then be joined by other finders etc.
+     */
+    public function save($name = null) {
+      if($name) $this->setName($name);
+      $this->master->finders->add($this);
+      return $this;
     }
 
-    // setup options
-    $opt = $this->wire(new WireData()); /** @var WireData $opt */
-    $opt->setArray([
-      'columns' => null, // null = join all columns, otherwise define an array
-      'removeID' => false, // dont remove the column used for the join
-    ]);
-    $opt->setArray($options);
-
-    // create new join finder
-    /** @var RockFinder3 */
-    $join = $this->modules->get('RockFinder3');
-    $join->find($slave->selector);
-    $join->main = $this; // main finder
-    $join->joinColName = $slave->name; // colname for join
-    $join->removeJoinCol = $opt->removeID; // remove join base column?
-    $join->setName("join_{$slave->name}_".uniqid());
-
-    // add columns
-    if(!$opt->columns) $opt->columns = $slave->columns;
-    foreach($opt->columns as $colname) {
-      $col = $slave->columns->get($colname);
-      $join->addColumnType($col);
+    /**
+     * Set name of this finder
+     * @return RockFinder3
+     */
+    public function setName($name) {
+      $this->name = $name;
+      return $this;
     }
-
-    // apply join to this finder
-    $this->joins->add($join);
-    $this->applyJoin($join);
-
-    return $this;
-  }
-
-  /**
-   * Save this finder to the global array of finders
-   * The finder can then be joined by other finders etc.
-   */
-  public function save($name = null) {
-    if($name) $this->setName($name);
-    $this->master->finders->add($this);
-    return $this;
-  }
-
-  /**
-   * Set name of this finder
-   * @return RockFinder3
-   */
-  public function setName($name) {
-    $this->name = $name;
-    return $this;
-  }
 
   /** ########## END CHAINABLE PUBLIC API METHODS ########## */
 
   /** ########## GET DATA ########## */
 
-  /**
-   * Return options by name
-   * @return array
-   */
-  public function getOptions($name) {
-    return $this->options->{$name};
-  }
-
-  /**
-   * Return option object by name and index
-   * @return WireData
-   */
-  public function getOption($name, $index) {
-    return $this->getOptions($name)[$index];
-  }
-
-  /**
-   * Get data of options for finder JSON
-   * @return string
-   */
-  public function getOptionsArray() {
-    $array = [];
-    foreach($this->options->getArray() as $name=>$data) {
-      $array[$name] = array_map(function($item) { return $item->title; }, $data);
+    /**
+     * Return options by name
+     * @return array
+     */
+    public function getOptions($name) {
+      return $this->options->{$name};
     }
-    return $array;
-  }
 
-  /**
-   * Get data of relations for finder JSON
-   * All relation rows have their ID as array key for quick access via JS
-   * @return string
-   */
-  public function getRelationsArray() {
-    $array = [];
-    foreach($this->relations as $r) {
-      $arr = [];
-      foreach($r->getRowArray() as $row) $arr[$row->id] = $row;
-      $array[$r->name] = $arr;
+    /**
+     * Return option object by name and index
+     * @return WireData
+     */
+    public function getOption($name, $index) {
+      return $this->getOptions($name)[$index];
     }
-    return $array;
-  }
 
-  /**
-   * Get plain row array ready for tabulator
-   * This returns only the array values without page-id-keys
-   * otherwise the resulting tabulator array on the client side is invalid.
-   * @return array
-   */
-  public function getRowArray() {
-    return array_values($this->getRows());
-  }
+    /**
+     * Get data of options for finder JSON
+     * @return string
+     */
+    public function getOptionsArray() {
+      $array = [];
+      foreach($this->options->getArray() as $name=>$data) {
+        $array[$name] = array_map(function($item) { return $item->title; }, $data);
+      }
+      return $array;
+    }
 
-  /**
-   * Get object by its id property
-   * @param string|int $id
-   * @return stdClass
-   */
-  public function getRowById($id) {
-    return $this->getRows()[(int)$id];
-  }
+    /**
+     * Get data of relations for finder JSON
+     * All relation rows have their ID as array key for quick access via JS
+     * @return string
+     */
+    public function getRelationsArray() {
+      $array = [];
+      foreach($this->relations as $r) {
+        $arr = [];
+        foreach($r->getRowArray() as $row) $arr[$row->id] = $row;
+        $array[$r->name] = $arr;
+      }
+      return $array;
+    }
 
-  /**
-   * Get rows by id string
-   * @param string|array $ids
-   * @return array
-   */
-  public function getRowsById($ids) {
-    $rows = [];
-    if(is_string($ids)) $ids = explode(",", $ids);
-    foreach($ids as $id) $rows[] = $this->getRowById($id);
-    return $rows;
-  }
+    /**
+     * Get plain row array ready for tabulator
+     * This returns only the array values without page-id-keys
+     * otherwise the resulting tabulator array on the client side is invalid.
+     * @return array
+     */
+    public function getRowArray() {
+      return array_values($this->getRows());
+    }
 
-  /**
-   * Get all rows of this finder
-   * @return array
-   */
-  public function getRows() {
-    if($this->rows) return $this->rows;
+    /**
+     * Get object by its id property
+     * @param string|int $id
+     * @return stdClass
+     */
+    public function getRowById($id) {
+      return $this->getRows()[(int)$id];
+    }
 
-    // check if a row limit is set for this finder
-    // this is the case when a relation is set to return only the subset
-    // of rows that are listed in the main finder
-    $this->applyRowLimit();
+    /**
+     * Get rows by id string
+     * @param string|array $ids
+     * @return array
+     */
+    public function getRowsById($ids) {
+      $rows = [];
+      if(is_string($ids)) $ids = explode(",", $ids);
+      foreach($ids as $id) $rows[] = $this->getRowById($id);
+      return $rows;
+    }
 
-    // now execute the query
-    $result = $this->query->execute();
-    $rows = $result->fetchAll(\PDO::FETCH_OBJ);
-    $rows = $this->master->addRowIds($rows);
-    $rows = $this->applyCallbacks($rows);
-    return $this->rows = $rows;
-  }
+    /**
+     * Get all rows of this finder
+     * @return array
+     */
+    public function getRows() {
+      if($this->rows) return $this->rows;
 
-  /**
-   * Return JSON string of current finder
-   * This can be used as AJAX source for tabulator
-   * @return string
-   */
-  public function getJSON($full = false) {
-    if(!$full) return json_encode($this->getRowArray());
+      // check if a row limit is set for this finder
+      // this is the case when a relation is set to return only the subset
+      // of rows that are listed in the main finder
+      $this->applyRowLimit();
 
-    // the full data json was requested
-    // this includes not only the data rows but also relations etc
-    return json_encode((object)[
-      'type' => 'RockFinder3',
-      'rows' => $this->getRowArray(),
-      'options' => $this->getOptionsArray(),
-      'relations' => $this->getRelationsArray(),
-    ]);
-  }
+      // now execute the query
+      $result = $this->query->execute();
+      $rows = $result->fetchAll(\PDO::FETCH_OBJ);
+      $rows = $this->master->addRowIds($rows);
+      $rows = $this->applyCallbacks($rows);
+      return $this->rows = $rows;
+    }
+
+    /**
+     * Return JSON string of current finder
+     * This can be used as AJAX source for tabulator
+     * @return string
+     */
+    public function getJSON($full = false) {
+      if(!$full) return json_encode($this->getRowArray());
+
+      // the full data json was requested
+      // this includes not only the data rows but also relations etc
+      return json_encode((object)[
+        'type' => 'RockFinder3',
+        'rows' => $this->getRowArray(),
+        'options' => $this->getOptionsArray(),
+        'relations' => $this->getRelationsArray(),
+      ]);
+    }
 
   /** ########## END GET DATA ########## */
 
   /** ########## AGGREGATION HELPERS ########## */
 
-  /**
-   * Group result by one column
-   * @return array|string
-   */
-  public function groupBy($name, $columns = [], $options = []) {
-    $opt = $this->wire(new WireData()); /** @var WireData $opt */
-    $opt->setArray([
-      'keys' => true, // use ids of grouped column as array keys
-      'removeId' => true, // remove id from results object
-      'sql' => false, // return sql statement
-      'alias' => 'tmp',
-    ]);
-    $opt->setArray($options);
+    /**
+     * Group result by one column
+     * @return array|string
+     */
+    public function groupBy($name, $columns = [], $options = []) {
+      $opt = $this->wire(new WireData()); /** @var WireData $opt */
+      $opt->setArray([
+        'keys' => true, // use ids of grouped column as array keys
+        'removeId' => true, // remove id from results object
+        'sql' => false, // return sql statement
+        'alias' => 'tmp',
+      ]);
+      $opt->setArray($options);
 
-    // prepare sql statement
-    $sql = $this->getSQL();
-    $select = "`$name`";
-    foreach($columns as $col) $select .= ",$col";
-    $sql = "SELECT $select FROM ($sql) as `{$opt->alias}` GROUP BY `$name`";
-    if($opt->sql) return $sql;
+      // prepare sql statement
+      $sql = $this->getSQL();
+      $select = "`$name`";
+      foreach($columns as $col) $select .= ",$col";
+      $sql = "SELECT $select FROM ($sql) as `{$opt->alias}` GROUP BY `$name`";
+      if($opt->sql) return $sql;
 
-    // fire query
-    $rows = [];
-    $result = $this->database->query($sql);
-    foreach($result->fetchAll(\PDO::FETCH_OBJ) as $row) {
-      $id = $row->$name;
-      if($opt->removeId) unset($row->$name);
-      if($opt->keys) $rows[$id] = $row;
-      else $rows[] = $row;
+      // fire query
+      $rows = [];
+      $result = $this->database->query($sql);
+      foreach($result->fetchAll(\PDO::FETCH_OBJ) as $row) {
+        $id = $row->$name;
+        if($opt->removeId) unset($row->$name);
+        if($opt->keys) $rows[$id] = $row;
+        else $rows[] = $row;
+      }
+
+      return $rows;
     }
-
-    return $rows;
-  }
 
   /** ########## END AGGREGATION HELPERS ########## */
 
   /** ########## TRACY DEBUGGER ########## */
 
-  /**
-   * dump to console
-   * @param string|bool $title
-   * @param array $config
-   * @return RockFinder3
-   */
-  public function dump($title = null, $config = null) {
-    echo $this->_dump([
-      'title' => $title === true ? null : $title,
-      'dump' => $title === true,
-      'config' => $config,
-    ]);
-    return $this;
-  }
-
-  /**
-   * dump to console
-   * @param string|bool $title
-   * @param array $config
-   * @return RockFinder3
-   */
-  public function d($title = null, $config = null) {
-    return $this->dump($title, $config);
-  }
-
-  /**
-   * dump to tracy bar
-   * @param string|bool $title
-   * @param array $config
-   * @return RockFinder3
-   */
-  public function barDump($title = null, $config = null) {
-    \TD::barEcho($this->_dump([
-      'title' => $title === true ? null : $title,
-      'barDump' => $title === true,
-      'config' => $config,
-    ]));
-    return $this;
-  }
-
-  /**
-   * dump to tracy bar
-   * @param string|bool $title
-   * @param array $config
-   * @return RockFinder3
-   */
-  public function bd($title = null, $config = null) {
-    return $this->barDump($title, $config);
-  }
-
-  /**
-   * Get the markup for the dump() or barDump()
-   * @param array $options
-   * @return string
-   */
-  private function _dump($options = []) {
-    // set the options object for this method
-    $opt = $this->wire(new WireData()); /** @var WireData $opt */
-    $opt->setArray([
-      'title' => null,
-      'dump' => false,
-      'barDump' => false,
-      'config' => null,
-    ]);
-    $opt->setArray($options);
-
-    // dump object?
-    if($opt->dump) \TD::dumpBig($this);
-    if($opt->barDump) \TD::barDumpBig($this);
-
-    // setup tabulator config object
-    $config = $this->wire(new WireData()); /** @var WireData $config */
-    $config->setArray([
-      'layout' => 'fitColumns',
-      'autoColumns' => true,
-      'pagination' => "local",
-      'paginationSize' => 10,
-      'paginationSizeSelector' => true,
-    ]);
-    $config->setArray($options ?: []);
-    $config = $config->getArray();
-    $config['data'] = $this->getRowArray();
-    $json = json_encode($config);
-
-    // prepare output
-    $id = uniqid();
-    $out = '';
-
-    // build output string
-    if($opt->title) $out.= "<h2>$opt->title</h2>";
-    $out .= "<div id='tab_$id'>loading...</div>
-    <script>
-    if(typeof Tabulator == 'undefined') {
-      var link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/tabulator-tables@4.6.3/dist/css/tabulator.min.css';
-      document.getElementsByTagName('head')[0].appendChild(link);
-
-      tabulatorLoader = function(src, callback) {
-        var script = document.createElement('script'),
-        loaded;
-        script.setAttribute('src', src);
-        if(callback) {
-          script.onreadystatechange = script.onload = function() {
-            if(!loaded) {
-              callback();
-            }
-            loaded = true;
-          };
-        }
-        document.getElementsByTagName('head')[0].appendChild(script);
-      };
-
-      tabulatorLoader('https://unpkg.com/tabulator-tables@4.6.3/dist/js/tabulator.min.js', function() {
-        new Tabulator('#tab_$id', $json);
-      });
+    /**
+     * dump to console
+     * @param string|bool $title
+     * @param array $config
+     * @return RockFinder3
+     */
+    public function dump($title = null, $config = null) {
+      echo $this->_dump([
+        'title' => $title === true ? null : $title,
+        'dump' => $title === true,
+        'config' => $config,
+      ]);
+      return $this;
     }
-    else new Tabulator('#tab_$id', $json);
-    </script>";
 
-    return $out;
-  }
+    /**
+     * dump to console
+     * @param string|bool $title
+     * @param array $config
+     * @return RockFinder3
+     */
+    public function d($title = null, $config = null) {
+      return $this->dump($title, $config);
+    }
 
-  /**
-   * Dump SQL of current finder to console (supports chaining)
-   * @return RockFinder3
-   */
-  public function dumpSQL() {
-    echo("<pre>".$this->getSQL()."</pre>");
-    return $this;
-  }
+    /**
+     * dump to tracy bar
+     * @param string|bool $title
+     * @param array $config
+     * @return RockFinder3
+     */
+    public function barDump($title = null, $config = null) {
+      \TD::barEcho($this->_dump([
+        'title' => $title === true ? null : $title,
+        'barDump' => $title === true,
+        'config' => $config,
+      ]));
+      return $this;
+    }
 
-  /**
-   * Dump SQL of current finder to tracy bar (supports chaining)
-   * @return RockFinder3
-   */
-  public function barDumpSQL() {
-    \TD::barEcho("<pre>".$this->getSQL()."</pre>");
-    return $this;
-  }
+    /**
+     * dump to tracy bar
+     * @param string|bool $title
+     * @param array $config
+     * @return RockFinder3
+     */
+    public function bd($title = null, $config = null) {
+      return $this->barDump($title, $config);
+    }
+
+    /**
+     * Get the markup for the dump() or barDump()
+     * @param array $options
+     * @return string
+     */
+    private function _dump($options = []) {
+      // set the options object for this method
+      $opt = $this->wire(new WireData()); /** @var WireData $opt */
+      $opt->setArray([
+        'title' => null,
+        'dump' => false,
+        'barDump' => false,
+        'config' => null,
+      ]);
+      $opt->setArray($options);
+
+      // dump object?
+      if($opt->dump) \TD::dumpBig($this);
+      if($opt->barDump) \TD::barDumpBig($this);
+
+      // setup tabulator config object
+      $config = $this->wire(new WireData()); /** @var WireData $config */
+      $config->setArray([
+        'layout' => 'fitColumns',
+        'autoColumns' => true,
+        'pagination' => "local",
+        'paginationSize' => 10,
+        'paginationSizeSelector' => true,
+      ]);
+      $config->setArray($options ?: []);
+      $config = $config->getArray();
+      $config['data'] = $this->getRowArray();
+      $json = json_encode($config);
+
+      // prepare output
+      $id = uniqid();
+      $out = '';
+
+      // build output string
+      if($opt->title) $out.= "<h2>$opt->title</h2>";
+      $out .= "<div id='tab_$id'>loading...</div>
+      <script>
+      if(typeof Tabulator == 'undefined') {
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/tabulator-tables@4.6.3/dist/css/tabulator.min.css';
+        document.getElementsByTagName('head')[0].appendChild(link);
+
+        tabulatorLoader = function(src, callback) {
+          var script = document.createElement('script'),
+          loaded;
+          script.setAttribute('src', src);
+          if(callback) {
+            script.onreadystatechange = script.onload = function() {
+              if(!loaded) {
+                callback();
+              }
+              loaded = true;
+            };
+          }
+          document.getElementsByTagName('head')[0].appendChild(script);
+        };
+
+        tabulatorLoader('https://unpkg.com/tabulator-tables@4.6.3/dist/js/tabulator.min.js', function() {
+          new Tabulator('#tab_$id', $json);
+        });
+      }
+      else new Tabulator('#tab_$id', $json);
+      </script>";
+
+      return $out;
+    }
+
+    /**
+     * Dump SQL of current finder to console (supports chaining)
+     * @return RockFinder3
+     */
+    public function dumpSQL() {
+      echo("<pre>".$this->getSQL()."</pre>");
+      return $this;
+    }
+
+    /**
+     * Dump SQL of current finder to tracy bar (supports chaining)
+     * @return RockFinder3
+     */
+    public function barDumpSQL() {
+      \TD::barEcho("<pre>".$this->getSQL()."</pre>");
+      return $this;
+    }
 
   /** ########## END TRACY DEBUGGER ########## */
 
   /** ########## TABULATOR METHODS ########## */
 
-  /**
-   * Get html markup of dumped table
-   * @return string
-   */
-  public function getDump() {
-    ob_start();
-    $this->dump();
-    return ob_get_clean();
-  }
+    /**
+     * Get html markup of dumped table
+     * @return string
+     */
+    public function getDump() {
+      ob_start();
+      $this->dump();
+      return ob_get_clean();
+    }
 
   /** ########## END TABULATOR METHODS ########## */
 
