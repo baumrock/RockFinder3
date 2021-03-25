@@ -743,7 +743,7 @@ class RockFinder3 extends WireData implements Module {
    */
   public function getObject($sql, $suffix = '') {
     $sub = str_replace("\n", "\n  ", $this->getSQL());
-    $sql .= trim(" FROM (\n  $sub\n) AS tmp ".$suffix);
+    $sql .= " FROM (\n  $sub\n) AS tmp".$suffix;
     return $this->master->getObject($sql);
   }
 
@@ -753,7 +753,7 @@ class RockFinder3 extends WireData implements Module {
    */
   public function getObjects($sql, $suffix = '') {
     $sub = str_replace("\n", "\n  ", $this->getSQL());
-    $sql .= trim(" FROM (\n  $sub\n) AS tmp ".$suffix);
+    $sql .= " FROM (\n  $sub\n) AS tmp ".$suffix;
     return $this->master->getObjects($sql);
   }
 
