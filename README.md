@@ -304,11 +304,21 @@ This will use these values behind the scenes (here for the `title` field):
 Often we need to calculate sums or averages of table data quickly and efficiently. RockFinder3 makes that easy as well:
 
 ```php
+$avg = $rockfinder->find("template=cat")
+    ->addColumn('weight')
+    ->getObject("SELECT AVG(weight)");
+db($avg);
+```
+
+![img](https://i.imgur.com/th6HIMv.png)
+
+```php
 $cats = $rockfinder
   ->find("template=cat")
   ->addColumns(['title', 'weight']);
-$cats->dump();
-db($cats->getObject("SELECT SUM(`weight`) AS `total`, COUNT(`id`) AS `cats`, SUM(`weight`)/COUNT(`id`) AS `avg`"));
+$cats->dump(); // dump finder data to tracy
+$obj = $cats->getObject("SELECT SUM(`weight`) AS `total`, COUNT(`id`) AS `cats`, SUM(`weight`)/COUNT(`id`) AS `avg`");
+db($obj); // dump result of aggregation
 ```
 
 ![img](https://i.imgur.com/SEdbxXx.png)
