@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.13',
+      'version' => '1.0.14',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -703,7 +703,10 @@ class RockFinder3 extends WireData implements Module {
     $finder = $this->limitRowsTo;
     $column = $this->name; // colname = name of current relation
     foreach($finder->getRows() as $row) {
-      $ids = array_merge($ids, explode(",", $row->$column));
+      // id is stored in column of main finder
+      // we get those ids from the row now and remove empty columns
+      $_ids = array_filter(explode(",", $row->$column));
+      $ids = array_merge($ids, $_ids);
     }
 
     // now restrict the relation to these ids
