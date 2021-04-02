@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.14',
+      'version' => '1.0.15',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -702,6 +702,8 @@ class RockFinder3 extends WireData implements Module {
     $ids = [];
     $finder = $this->limitRowsTo;
     $column = $this->name; // colname = name of current relation
+
+    // loop all rows
     foreach($finder->getRows() as $row) {
       // id is stored in column of main finder
       // we get those ids from the row now and remove empty columns
@@ -711,7 +713,7 @@ class RockFinder3 extends WireData implements Module {
 
     // now restrict the relation to these ids
     $ids = implode(",", $ids);
-    $this->query->where("pages.id IN ($ids)");
+    if($ids) $this->query->where("pages.id IN ($ids)");
   }
 
   /**
