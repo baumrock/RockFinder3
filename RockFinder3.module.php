@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.15',
+      'version' => '1.0.16',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -137,11 +137,16 @@ class RockFinder3 extends WireData implements Module {
 
     /**
      * Add all fields from template as columns
+     *
+     * Usage
+     * $rm->addColumnsFromTemplate("foo", ['notthis', 'notthat']);
+     *
      * @return self
      */
-    public function addColumnsFromTemplate($tpl) {
+    public function addColumnsFromTemplate($tpl, $exclude = []) {
       $tpl = $this->wire->templates->get((string)$tpl);
-      $this->addColumns($tpl->fields->each('name'));
+      $diff = array_diff($tpl->fields->each('name'), $exclude);
+      $this->addColumns($diff);
       return $this;
     }
 
