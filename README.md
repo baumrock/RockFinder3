@@ -411,7 +411,7 @@ It might be easier to map the returned value of the finder to an array of labels
 ```php
 $sexes = ['f'=>'Female', 'm'=>'Male'];
 $rockfinder->find(...)
-  ->addColumns([...])
+  ->addColumns(["sex", ...])
   ->map("sex", $sexes);
 ```
 
