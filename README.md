@@ -402,6 +402,19 @@ $finder->each(function($row, $finder) {
 }
 ```
 
+## map(column, labels)
+
+Sometimes the value stored in the DB is a key that is not as descriptive as a text label. For example it could be that the returned value of a "sex" column is `f` for `female` or `m` for `male`. One option is to replace this value via JS which could have benefits regarding performance on large datasets, but it is a little more work to make everything work as expected (eg you need to take care of formatting of the cell as well as the sort and filter values).
+
+It might be easier to map the returned value of the finder to an array of labels in such cases:
+
+```php
+$sexes = ['f'=>'Female', 'm'=>'Male'];
+$rockfinder->find(...)
+  ->addColumns([...])
+  ->map("sex", $sexes);
+```
+
 ![img](hr.svg)
 
 # Joins

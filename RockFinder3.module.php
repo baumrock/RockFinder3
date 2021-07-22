@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.17',
+      'version' => '1.0.18',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -292,6 +292,25 @@ class RockFinder3 extends WireData implements Module {
       $this->joins->add($join);
       $this->applyJoin($join);
 
+      return $this;
+    }
+
+    /**
+     * Map column to array value by array key
+     *
+     * Usage:
+     * $labels = ['f' => 'Female', 'm' => 'Mail'];
+     * $finder->map("yourcolumn", $labels);
+     *
+     * @param string $col
+     * @param array $arr
+     * @return RockFinder3
+     */
+    public function map($col, $arr) {
+      $this->each(function($row) use($col, $arr) {
+        $key = $row->$col;
+        $row->$col = $arr[$key];
+      });
       return $this;
     }
 
