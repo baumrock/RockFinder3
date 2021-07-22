@@ -415,6 +415,8 @@ $rockfinder->find(...)
   ->map("sex", $sexes);
 ```
 
+The column will then show `male` and `female` instead of `m` and `f`.
+
 ![img](hr.svg)
 
 # Joins
