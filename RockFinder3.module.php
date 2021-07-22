@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.18',
+      'version' => '1.0.19',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -309,7 +309,7 @@ class RockFinder3 extends WireData implements Module {
     public function map($col, $arr) {
       $this->each(function($row) use($col, $arr) {
         $key = $row->$col;
-        $row->$col = $arr[$key];
+        $row->$col = array_key_exists($key, $arr) ? $arr[$key] : '';
       });
       return $this;
     }
