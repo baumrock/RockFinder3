@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.19',
+      'version' => '1.0.20',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -94,7 +94,8 @@ class RockFinder3 extends WireData implements Module {
      * Add a single column by name
      * @return RockFinder3
      */
-    public function addColumn($colname) {
+    public function addColumn($colname, $alias = null) {
+      if($alias) return $this->addColumns([$colname => $alias]);
       return $this->addColumns([$colname]);
     }
 
