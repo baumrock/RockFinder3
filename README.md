@@ -301,6 +301,12 @@ This will use these values behind the scenes (here for the `title` field):
 
 # Aggregations
 
+The simplest aggregation is the `count()` method:
+
+```php
+$count = $rockfinder->find(...)->count();
+```
+
 Often we need to calculate sums or averages of table data quickly and efficiently. RockFinder3 makes that easy as well:
 
 ```php
