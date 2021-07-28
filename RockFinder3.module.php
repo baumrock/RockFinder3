@@ -66,7 +66,7 @@ class RockFinder3 extends WireData implements Module {
   public static function getModuleInfo() {
     return [
       'title' => 'RockFinder3',
-      'version' => '1.0.20',
+      'version' => '1.0.21',
       'summary' => 'Combine the power of ProcessWire selectors and SQL',
       'autoload' => false,
       'singular' => false,
@@ -453,6 +453,14 @@ class RockFinder3 extends WireData implements Module {
   /** ########## END GET DATA ########## */
 
   /** ########## AGGREGATION HELPERS ########## */
+
+    /**
+     * Count number of rows
+     * @return int
+     */
+    public function count() {
+      return count($this->getRows());
+    }
 
     /**
      * Group result by one column
