@@ -140,7 +140,7 @@ class RockFinder3 extends WireData implements Module {
      * Add all fields from template as columns
      *
      * Usage
-     * $rm->addColumnsFromTemplate("foo", ['notthis', 'notthat']);
+     * $rf->addColumnsFromTemplate("foo", ['notthis', 'notthat']);
      *
      * @return self
      */
