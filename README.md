@@ -4,6 +4,12 @@
 
 ![img](https://i.imgur.com/6FbDwQK.png)
 
+# Donations
+
+[![img](donate.svg)](https://paypal.me/baumrock)
+
+😎🤗👍
+
 # Preface
 
 ## Why this module exists
@@ -18,6 +24,22 @@ Possible use cases:
 * Reduce the amount of necessary SQL queries ([see here](https://processwire.com/talk/topic/22205-rockfinder2-combine-the-power-of-pw-selectors-and-sql/?do=findComment&comment=200406)).
 * Find data for a CSV or XML export.
 * Find data for a REST-API.
+
+## Differences to $pages->findRaw()
+
+At first sight RockFinder looks very similar to the new `findRaw()` method with is part of the core since 3.0.172; One main difference is when it comes to joins and relations. Take a simple page reference field as an example. findRaw will return this:
+
+![img](https://i.imgur.com/r141OYp.png)
+
+Wheras RockFinder will return a plain array ready to be used as data source of a HTML table:
+
+![img](https://i.imgur.com/bSi2UNc.png)
+
+Also note that RockFinder will return `null` values if no data exists for the requested field whereas findRaw will not have this property available. This means that it's a little harder to work with the result of findRaw because you need to check if the requested property exists in the result for every single item of your data array!
+
+If you want to get the title of the selected page instead of the ID you can use joins. The result will be - different from findRaw() - a plain php array without any nested items/arrays:
+
+![img](https://i.imgur.com/T5c1OKP.png)
 
 ## Differences to previous RockFinder modules
 
