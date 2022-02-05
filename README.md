@@ -89,8 +89,8 @@ In the most basic setup the only thing you need to provide to a RockFinder is a 
 // either via the API variable
 $rockfinder->find("template=foo");
 
-// or via a modules call
-$modules->get('RockFinder3')->find("template=foo");
+// or via a modules call (use RockFinder3Master, not RockFinder3!)
+$modules->get('RockFinder3Master')->find("template=foo");
 ```
 
 ![img](hr.svg)
