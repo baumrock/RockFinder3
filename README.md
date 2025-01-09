@@ -1,5 +1,9 @@
 ![img](logo.svg)
 
+# ARCHIVED
+
+This module should still work well for a long time, but I don't plan to support it further as I have no client or personal projects that use it in their codebase. `$pages->findRaw()` has evolved over time to support similar features and as it is part of the core I'm using it now on my own.
+
 ## Combine the power of ProcessWire selectors and SQL
 
 ![img](https://i.imgur.com/6FbDwQK.png)
